@@ -34,10 +34,9 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Create floxy server
+	// Create a floxy server
 	store := floxy.NewStore(pool)
-	monitor := floxy.NewMonitor(pool)
-	floxyServer := api.NewServer(store, monitor)
+	floxyServer := api.New(nil, store)
 
 	return &Server{
 		config: cfg,

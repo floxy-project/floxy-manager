@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/jackc/pgx/v5 v5.7.6
-	github.com/rom8726/floxy v1.2.1-0.20251024135118-4e0ae5314ffe
+	github.com/rom8726/floxy v1.4.0
 )
 
 require (

@@ -89,6 +89,8 @@ github.com/rom8726/floxy v1.2.1-0.20251024132924-efda9b2cd037 h1:c9TLRl+VLVErqjG
 github.com/rom8726/floxy v1.2.1-0.20251024132924-efda9b2cd037/go.mod h1:XCgaQ2p/5SPIcl0cKKvCoAavrGLu1JaMIJN/vmURJXE=
 github.com/rom8726/floxy v1.2.1-0.20251024135118-4e0ae5314ffe h1:ZdlNOLEQvClSvFgJqlSBjIkVmochwHfj+hGkez3BHMo=
 github.com/rom8726/floxy v1.2.1-0.20251024135118-4e0ae5314ffe/go.mod h1:XCgaQ2p/5SPIcl0cKKvCoAavrGLu1JaMIJN/vmURJXE=
+github.com/rom8726/floxy v1.4.0 h1:u6FJaG57TniUXWdKJmgKrB+8HdCU3ufW7CVfp9Hfee0=
+github.com/rom8726/floxy v1.4.0/go.mod h1:XCgaQ2p/5SPIcl0cKKvCoAavrGLu1JaMIJN/vmURJXE=
 github.com/shirou/gopsutil/v4 v4.25.6 h1:kLysI2JsKorfaFPcYmcJqbzROzsBWEOAtw6A7dIfqXs=
 github.com/shirou/gopsutil/v4 v4.25.6/go.mod h1:PfybzyydfZcN+JMMjkF6Zb8Mq1A/VcogFFg7hj50W9c=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
