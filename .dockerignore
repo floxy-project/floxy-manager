@@ -7,9 +7,9 @@ README.md
 .nyc_output
 coverage
 .nyc_output
-.vscode
-.idea
 *.log
-dist
+.vscode/
+.idea/
+dist/
 web/node_modules
 web/dist

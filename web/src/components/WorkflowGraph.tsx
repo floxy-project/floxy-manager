@@ -2,7 +2,7 @@ import React from 'react';
 
 export interface StepDefinition {
     name: string;
-    type: 'task' | 'parallel' | 'condition' | 'fork' | 'join' | 'save_point';
+    type: 'task' | 'parallel' | 'condition' | 'fork' | 'join' | 'save_point' | 'human';
     handler?: string;
     max_retries?: number;
     next?: string[];
@@ -97,6 +97,19 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
         }
     };
 
+    const getStepColor = (type: string): string => {
+        switch (type) {
+            case 'human': return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            case 'task': return 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
+            case 'parallel': return 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
+            case 'condition': return 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)';
+            case 'fork': return 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)';
+            case 'join': return 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            case 'save_point': return 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            default: return 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
+        }
+    };
+
     const getStepIcon = (type: string): string => {
         switch (type) {
             case 'task': return '⚙️';
@@ -105,6 +118,7 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
             case 'fork': return '🔀';
             case 'join': return '🔗';
             case 'save_point': return '💾';
+            case 'human': return '👤';
             default: return '📋';
         }
     };
@@ -339,7 +353,7 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             top: node.y,
                             width: node.width,
                             height: node.height,
-                            background: getStepGradient(node.id),
+                            background: node.step.type === 'human' ? getStepColor(node.step.type) : getStepGradient(node.id),
                             border: '1px solid rgba(255,255,255,0.2)',
                             borderRadius: '12px',
                             display: 'flex',
@@ -486,6 +500,24 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             ⚡
                         </div>
                         <span>Has Compensation</span>
+                    </div>
+                    <div>
+                        <div style={{
+                            width: '20px',
+                            height: '20px',
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            color: 'white',
+                            fontWeight: '700',
+                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
+                        }}>
+                            👤
+                        </div>
+                        <span>Human Step</span>
                     </div>
                 </div>
             )}

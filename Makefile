@@ -5,22 +5,20 @@ build:
 	@echo "Building frontend..."
 	cd web && npm install && npm run build
 	@echo "Building Go backend..."
-	go build -o bin/floxy-manager ./cmd/server
+	go build -o bin/floxy-ui .
 
 # Run in development mode
 dev:
 	@echo "Starting development mode..."
-	@echo "Frontend: http://localhost:3000"
-	@echo "Backend: http://localhost:3001"
 	@echo "Press Ctrl+C to stop"
 	@trap 'kill %1; kill %2' INT; \
 	cd web && npm run dev & \
-	go run ./cmd/server & \
+	go run . & \
 	wait
 
 # Run production build
 run: build
-	./bin/floxy-manager
+	./bin/floxy-ui
 
 # Clean build artifacts
 clean:
@@ -30,7 +28,7 @@ clean:
 
 # Docker build
 docker-build:
-	docker build -t floxy-manager:latest .
+	docker build -t floxy-ui:latest .
 
 # Docker run
 docker-run:
@@ -40,7 +38,7 @@ docker-run:
 		-e DB_NAME=floxy \
 		-e DB_USER=floxy \
 		-e DB_PASSWORD=password \
-		floxy-manager:latest
+		floxy-ui:latest
 
 # Install dependencies
 install:

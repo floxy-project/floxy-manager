@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { CleanupModal } from '../components/CleanupModal';
 
 interface SummaryStats {
   total_workflows: number;
@@ -30,6 +31,7 @@ export const Dashboard: React.FC = () => {
   const [activeWorkflows, setActiveWorkflows] = useState<ActiveWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +59,11 @@ export const Dashboard: React.FC = () => {
 
     fetchData();
   }, []);
+
+  const handleCleanup = (daysToKeep: number) => {
+    // Refresh data after successful cleanup
+    window.location.reload();
+  };
 
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -98,6 +105,20 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Administrative Actions */}
+      <div className="card">
+        <h2>Administrative Actions</h2>
+        <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
+          Manage workflow instances and perform system maintenance tasks.
+        </p>
+        <button
+          className="btn btn-danger"
+          onClick={() => setShowCleanupModal(true)}
+        >
+          Cleanup Old Workflows
+        </button>
+      </div>
 
       <div className="card">
         <h2>Active Workflows</h2>
@@ -153,6 +174,13 @@ export const Dashboard: React.FC = () => {
           </table>
         )}
       </div>
+
+      {/* Cleanup modal */}
+      <CleanupModal
+        isOpen={showCleanupModal}
+        onClose={() => setShowCleanupModal(false)}
+        onCleanup={handleCleanup}
+      />
     </div>
   );
 };

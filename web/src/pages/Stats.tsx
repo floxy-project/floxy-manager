@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 interface WorkflowStats {
-    name: string;
+    workflow_name: string;
     version: number;
-    total_instances: string | number;
-    completed: string | number;
-    failed: string | number;
-    running: string | number;
-    avg_duration_seconds: string | number | null;
+    total_instances: number;
+    completed_instances: number;
+    failed_instances: number;
+    running_instances: number;
+    average_duration: number;
 }
 
 export const Stats: React.FC = () => {
@@ -42,20 +42,20 @@ export const Stats: React.FC = () => {
         return <div className="error">Error: {error}</div>;
     }
 
-    const formatDuration = (seconds: string | number | null) => {
-        if (seconds === null || seconds === '') return '-';
-        const numSeconds = typeof seconds === 'string' ? parseFloat(seconds) : seconds;
-        if (isNaN(numSeconds)) return '-';
-        if (numSeconds < 60) return `${numSeconds.toFixed(1)}s`;
-        if (numSeconds < 3600) return `${(numSeconds / 60).toFixed(1)}m`;
-        return `${(numSeconds / 3600).toFixed(1)}h`;
+    const formatDuration = (nanoseconds: number) => {
+        if (nanoseconds === 0 || nanoseconds === null) return '-';
+        
+        // Convert nanoseconds to seconds
+        const seconds = nanoseconds / 1000000000;
+        
+        if (seconds < 60) return `${seconds.toFixed(1)}s`;
+        if (seconds < 3600) return `${(seconds / 60).toFixed(1)}m`;
+        return `${(seconds / 3600).toFixed(1)}h`;
     };
 
-    const getSuccessRate = (completed: string | number, total: string | number) => {
-        const numCompleted = typeof completed === 'string' ? parseInt(completed) : completed;
-        const numTotal = typeof total === 'string' ? parseInt(total) : total;
-        if (numTotal === 0) return '0.0';
-        return ((numCompleted / numTotal) * 100).toFixed(1);
+    const getSuccessRate = (completed: number, total: number) => {
+        if (total === 0) return '0.0';
+        return ((completed / total) * 100).toFixed(1);
     };
 
     return (
@@ -81,17 +81,17 @@ export const Stats: React.FC = () => {
                         </thead>
                         <tbody>
                         {stats.map((stat, index) => (
-                            <tr key={`${stat.name}-${stat.version}`}>
-                                <td>{stat.name}</td>
+                            <tr key={`${stat.workflow_name}-${stat.version}`}>
+                                <td>{stat.workflow_name}</td>
                                 <td>v{stat.version}</td>
                                 <td>{stat.total_instances}</td>
-                                <td>{stat.completed}</td>
-                                <td>{stat.failed}</td>
-                                <td>{stat.running}</td>
+                                <td>{stat.completed_instances}</td>
+                                <td>{stat.failed_instances}</td>
+                                <td>{stat.running_instances}</td>
                                 <td>
-                                    {getSuccessRate(stat.completed, stat.total_instances)}%
+                                    {getSuccessRate(stat.completed_instances, stat.total_instances)}%
                                 </td>
-                                <td>{formatDuration(stat.avg_duration_seconds)}</td>
+                                <td>{formatDuration(stat.average_duration)}</td>
                             </tr>
                         ))}
                         </tbody>
@@ -104,37 +104,25 @@ export const Stats: React.FC = () => {
                 <div className="stats-grid">
                     <div className="stat-card">
                         <div className="stat-number">
-                            {stats.reduce((sum, stat) => {
-                                const num = typeof stat.total_instances === 'string' ? parseInt(stat.total_instances) : stat.total_instances;
-                                return sum + (isNaN(num) ? 0 : num);
-                            }, 0)}
+                            {stats.reduce((sum, stat) => sum + stat.total_instances, 0)}
                         </div>
                         <div className="stat-label">Total Instances</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-number">
-                            {stats.reduce((sum, stat) => {
-                                const num = typeof stat.completed === 'string' ? parseInt(stat.completed) : stat.completed;
-                                return sum + (isNaN(num) ? 0 : num);
-                            }, 0)}
+                            {stats.reduce((sum, stat) => sum + stat.completed_instances, 0)}
                         </div>
                         <div className="stat-label">Completed</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-number">
-                            {stats.reduce((sum, stat) => {
-                                const num = typeof stat.failed === 'string' ? parseInt(stat.failed) : stat.failed;
-                                return sum + (isNaN(num) ? 0 : num);
-                            }, 0)}
+                            {stats.reduce((sum, stat) => sum + stat.failed_instances, 0)}
                         </div>
                         <div className="stat-label">Failed</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-number">
-                            {stats.reduce((sum, stat) => {
-                                const num = typeof stat.running === 'string' ? parseInt(stat.running) : stat.running;
-                                return sum + (isNaN(num) ? 0 : num);
-                            }, 0)}
+                            {stats.reduce((sum, stat) => sum + stat.running_instances, 0)}
                         </div>
                         <div className="stat-label">Running</div>
                     </div>

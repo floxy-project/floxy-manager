@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/rom8726/floxy-manager/internal/config"
-	"github.com/rom8726/floxy-manager/internal/server"
+	"github.com/rom8726/floxy-ui/internal/config"
+	"github.com/rom8726/floxy-ui/internal/server"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 	}
 	defer srv.Close()
 
-	// Handle graceful shutdown
+	// Handle a graceful shutdown
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
