@@ -1,4 +1,4 @@
-module github.com/rom8726/floxy-ui
+module github.com/rom8726/floxy-manager
 
 go 1.25
 

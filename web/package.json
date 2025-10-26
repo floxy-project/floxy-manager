@@ -1,7 +1,7 @@
 {
-  "name": "floxy-ui-web",
+  "name": "floxy-manager",
   "version": "1.0.0",
-  "description": "Web UI for floxy",
+  "description": "Web Manager for floxy",
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack serve --mode development",

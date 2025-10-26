@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/rom8726/floxy-ui/internal/config"
-	"github.com/rom8726/floxy-ui/internal/server"
+	"github.com/rom8726/floxy-manager/internal/config"
+	"github.com/rom8726/floxy-manager/internal/server"
 )
 
 func main() {

@@ -13,7 +13,7 @@ import (
 	"github.com/rom8726/floxy/plugins/api/cleanup"
 	human_decision "github.com/rom8726/floxy/plugins/api/human-decision"
 
-	"github.com/rom8726/floxy-ui/internal/config"
+	"github.com/rom8726/floxy-manager/internal/config"
 )
 
 type Server struct {
