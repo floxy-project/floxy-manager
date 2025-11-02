@@ -290,6 +290,11 @@ h3 {
     color: #c62828;
 }
 
+.status.dlq {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+}
+
 .status.compensation {
     background-color: #fce4ec;
     color: #880e4f;
@@ -298,6 +303,26 @@ h3 {
 .status.rolled_back {
     background-color: #fff3e0;
     color: #e65100;
+}
+
+.status.waiting_decision {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.status.confirmed {
+    background-color: #d1fae5;
+    color: #059669;
+}
+
+.status.rejected {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.status.paused {
+    background-color: #e0e7ff;
+    color: #3730a3;
 }
 
 .btn {

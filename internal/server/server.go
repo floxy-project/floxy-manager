@@ -11,6 +11,7 @@ import (
 	"github.com/rom8726/floxy/plugins/api/abort"
 	"github.com/rom8726/floxy/plugins/api/cancel"
 	"github.com/rom8726/floxy/plugins/api/cleanup"
+	"github.com/rom8726/floxy/plugins/api/dlq"
 	human_decision "github.com/rom8726/floxy/plugins/api/human-decision"
 
 	"github.com/rom8726/floxy-manager/internal/config"
@@ -52,12 +53,14 @@ func New(cfg *config.Config) (*Server, error) {
 	abortPlugin := abort.New(engine, func(req *http.Request) (string, error) {
 		return "admin", nil
 	})
+	dlqPlugin := dlq.New(engine, store)
 	cleanupPlugin := cleanup.New(store)
 
 	floxyServer := api.New(engine, store, api.WithPlugins(
 		humanDecisionPlugin,
 		cancelPlugin,
 		abortPlugin,
+		dlqPlugin,
 		cleanupPlugin,
 	))
 

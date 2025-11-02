@@ -14,15 +14,13 @@ interface SummaryStats {
 interface ActiveWorkflow {
   id: number;
   workflow_id: string;
+  workflow_name: string;
   status: string;
-  created_at: string;
+  started_at: string;
   updated_at: string;
-  duration_seconds: number;
+  current_step: string;
   total_steps: number;
   completed_steps: number;
-  failed_steps: number;
-  running_steps: number;
-  compensation_steps: number;
   rolled_back_steps: number;
 }
 
@@ -147,7 +145,7 @@ export const Dashboard: React.FC = () => {
                       {workflow.status}
                     </span>
                   </td>
-                  <td>{Math.round(workflow.duration_seconds)}s</td>
+                  <td>{Math.round((new Date(workflow.updated_at).getTime() - new Date(workflow.started_at).getTime()) / 1000)}s</td>
                   <td>
                     {workflow.completed_steps}/{workflow.total_steps}
                   </td>

@@ -22,6 +22,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Link to="/instances" className={location.pathname.startsWith('/instances') ? 'active' : ''}>
               Instances
             </Link>
+            <Link to="/dlq" className={location.pathname.startsWith('/dlq') ? 'active' : ''}>
+              Dead Letter Queue
+            </Link>
             <Link to="/stats" className={location.pathname === '/stats' ? 'active' : ''}>
               Statistics
             </Link>

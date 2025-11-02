@@ -99,8 +99,8 @@ github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c h1:ncq/mPwQF
 github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0tI/otEQ=
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
-github.com/rom8726/floxy v1.7.0 h1:M9iyNF9Uw+UzBU6l0ngxAL6wyEjQwu292erzXcDhXts=
-github.com/rom8726/floxy v1.7.0/go.mod h1:yIWS3V8+gSx5VjtB3eiKktB1A+06tyoiApXhLtFsmJM=
+github.com/rom8726/floxy v1.11.2 h1:CcqLTHmtowXXuoJlrdOdotDEX+ZCHpPyhIp+QTHEOBc=
+github.com/rom8726/floxy v1.11.2/go.mod h1:HXCIGDzD/mXf6sISie0icrUVQKY77sJu/i8RKKbEc+M=
 github.com/shirou/gopsutil/v4 v4.25.6 h1:kLysI2JsKorfaFPcYmcJqbzROzsBWEOAtw6A7dIfqXs=
 github.com/shirou/gopsutil/v4 v4.25.6/go.mod h1:PfybzyydfZcN+JMMjkF6Zb8Mq1A/VcogFFg7hj50W9c=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=

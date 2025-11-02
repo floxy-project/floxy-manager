@@ -4,15 +4,13 @@ import { Link } from 'react-router-dom';
 interface ActiveWorkflow {
   id: number;
   workflow_id: string;
+  workflow_name: string;
   status: string;
-  created_at: string;
+  started_at: string;
   updated_at: string;
-  duration_seconds: number;
+  current_step: string;
   total_steps: number;
   completed_steps: number;
-  failed_steps: number;
-  running_steps: number;
-  compensation_steps: number;
   rolled_back_steps: number;
 }
 
@@ -79,19 +77,9 @@ export const Instances: React.FC = () => {
                       {instance.status}
                     </span>
                   </td>
-                  <td>{Math.round(instance.duration_seconds)}s</td>
+                  <td>{Math.round((new Date(instance.updated_at).getTime() - new Date(instance.started_at).getTime()) / 1000)}s</td>
                   <td>
                     {instance.completed_steps}/{instance.total_steps}
-                    {instance.failed_steps > 0 && (
-                      <span style={{ color: '#dc3545', marginLeft: '0.5rem' }}>
-                        ({instance.failed_steps} failed)
-                      </span>
-                    )}
-                    {instance.compensation_steps > 0 && (
-                      <span style={{ color: '#6f42c1', marginLeft: '0.5rem' }}>
-                        ({instance.compensation_steps} compensation)
-                      </span>
-                    )}
                     {instance.rolled_back_steps > 0 && (
                       <span style={{ color: '#fd7e14', marginLeft: '0.5rem' }}>
                         ({instance.rolled_back_steps} rolled back)
@@ -104,13 +92,13 @@ export const Instances: React.FC = () => {
                         style={{ 
                           width: `${(instance.completed_steps / instance.total_steps) * 100}%`,
                           height: '8px',
-                          backgroundColor: instance.failed_steps > 0 ? '#dc3545' : '#007bff',
+                          backgroundColor: instance.status === 'dlq' ? '#dc3545' : '#007bff',
                           borderRadius: '4px'
                         }}
                       />
                     </div>
                   </td>
-                  <td>{new Date(instance.created_at).toLocaleString()}</td>
+                  <td>{new Date(instance.started_at).toLocaleString()}</td>
                   <td>
                     <Link to={`/instances/${instance.id}`} className="btn btn-primary">
                       View Details

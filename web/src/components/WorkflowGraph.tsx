@@ -27,7 +27,7 @@ export interface WorkflowStep {
     instance_id: number;
     step_name: string;
     step_type: string;
-    status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'compensation' | 'rolled_back';
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped' | 'compensation' | 'rolled_back' | 'waiting_decision' | 'confirmed' | 'rejected' | 'paused';
     input?: any;
     output?: any;
     error?: string;
@@ -93,6 +93,10 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
             case 'compensation': return 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)';
             case 'rolled_back': return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
             case 'skipped': return 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+            case 'waiting_decision': return 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+            case 'confirmed': return 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            case 'rejected': return 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            case 'paused': return 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
             default: return 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)';
         }
     };
@@ -518,6 +522,46 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             👤
                         </div>
                         <span>Human Step</span>
+                    </div>
+                    <div>
+                        <div style={{
+                            width: '16px',
+                            height: '16px',
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                        }}></div>
+                        <span>Waiting Decision</span>
+                    </div>
+                    <div>
+                        <div style={{
+                            width: '16px',
+                            height: '16px',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                        }}></div>
+                        <span>Confirmed</span>
+                    </div>
+                    <div>
+                        <div style={{
+                            width: '16px',
+                            height: '16px',
+                            background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+                        }}></div>
+                        <span>Rejected</span>
+                    </div>
+                    <div>
+                        <div style={{
+                            width: '16px',
+                            height: '16px',
+                            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+                        }}></div>
+                        <span>Paused</span>
                     </div>
                 </div>
             )}

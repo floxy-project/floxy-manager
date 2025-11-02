@@ -7,6 +7,8 @@ import { WorkflowDetail } from './pages/WorkflowDetail';
 import { Instances } from './pages/Instances';
 import { InstanceDetail } from './pages/InstanceDetail';
 import { Stats } from './pages/Stats';
+import { DLQ } from './pages/DLQ';
+import { DLQDetail } from './pages/DLQDetail';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
         <Route path="/instances" element={<Instances />} />
         <Route path="/instances/:id" element={<InstanceDetail />} />
         <Route path="/stats" element={<Stats />} />
+        <Route path="/dlq" element={<DLQ />} />
+        <Route path="/dlq/:id" element={<DLQDetail />} />
       </Routes>
     </Layout>
   );
