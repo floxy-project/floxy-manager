@@ -229,3 +229,91 @@ values ('c243ca60-1307-4b92-83ea-a1c22791968b', 'c80633be-e36b-4fb8-8d5d-f4b05c4
 on conflict (role_id, permission_id) do nothing;
 
 insert into workflows.tenants (name, created_at) values ('default', now()) on conflict (name) do nothing;
+
+create table if not exists workflows.membership_audit
+(
+    id            bigserial
+        primary key,
+    membership_id uuid,
+    actor_user_id integer,
+    action        varchar(50)                            not null,
+    old_value     jsonb,
+    new_value     jsonb,
+    created_at    timestamp with time zone default now() not null
+);
+
+create table if not exists workflows.ldap_sync_stats
+(
+    id              serial
+        primary key,
+    sync_session_id uuid                                                          not null
+        unique,
+    start_time      timestamp with time zone default now()                        not null,
+    end_time        timestamp with time zone,
+    duration        varchar(50),
+    total_users     integer                  default 0                            not null,
+    synced_users    integer                  default 0                            not null,
+    errors          integer                  default 0                            not null,
+    warnings        integer                  default 0                            not null,
+    status          varchar(20)              default 'running'::character varying not null,
+    error_message   text
+);
+
+create index if not exists idx_ldap_sync_stats_sync_session_id
+    on workflows.ldap_sync_stats (sync_session_id);
+
+create index if not exists idx_ldap_sync_stats_start_time
+    on workflows.ldap_sync_stats (start_time);
+
+create index if not exists idx_ldap_sync_stats_status
+    on workflows.ldap_sync_stats (status);
+
+create table if not exists workflows.ldap_sync_logs
+(
+    id                 serial
+        primary key,
+    timestamp          timestamp with time zone default now() not null,
+    level              varchar(10)                            not null,
+    message            text                                   not null,
+    username           varchar(255),
+    details            text,
+    sync_session_id    uuid                                   not null,
+    stack_trace        text,
+    ldap_error_code    integer,
+    ldap_error_message text
+);
+
+create index if not exists idx_ldap_sync_logs_timestamp
+    on workflows.ldap_sync_logs (timestamp);
+
+create index if not exists idx_ldap_sync_logs_level
+    on workflows.ldap_sync_logs (level);
+
+create index if not exists idx_ldap_sync_logs_sync_session_id
+    on workflows.ldap_sync_logs (sync_session_id);
+
+create index if not exists idx_ldap_sync_logs_username
+    on workflows.ldap_sync_logs (username);
+
+create or replace view workflows.v_user_project_permissions(user_id, project_id, role_key, permissions) as
+SELECT m.user_id,
+       m.project_id,
+       r.key                                                                    AS role_key,
+       json_agg(json_build_object('key', p.key, 'name', p.name) ORDER BY p.key) AS permissions
+FROM workflows.memberships m
+         JOIN workflows.roles r ON r.id = m.role_id
+         LEFT JOIN workflows.role_permissions rp ON rp.role_id = r.id
+         LEFT JOIN workflows.permissions p ON p.id = rp.permission_id
+GROUP BY m.user_id, m.project_id, r.key
+ORDER BY m.user_id, m.project_id;
+
+create or replace view workflows.v_role_permissions(role_id, role_key, role_name, permissions) as
+SELECT r.id                                                                     AS role_id,
+       r.key                                                                    AS role_key,
+       r.name                                                                   AS role_name,
+       json_agg(json_build_object('key', p.key, 'name', p.name) ORDER BY p.key) AS permissions
+FROM workflows.roles r
+         LEFT JOIN workflows.role_permissions rp ON rp.role_id = r.id
+         LEFT JOIN workflows.permissions p ON p.id = rp.permission_id
+GROUP BY r.id, r.key, r.name
+ORDER BY r.key;
