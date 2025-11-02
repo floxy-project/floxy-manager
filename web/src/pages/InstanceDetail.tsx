@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { WorkflowGraph } from '../components/WorkflowGraph';
 import { DecisionModal } from '../components/DecisionModal';
 import { InstanceActionModal } from '../components/InstanceActionModal';
+import { JsonViewer } from '../components/JsonViewer';
 
 interface WorkflowInstance {
   id: number;
@@ -198,9 +199,7 @@ export const InstanceDetail: React.FC = () => {
           {instance.error && (
             <div style={{ gridColumn: '1 / -1' }}>
               <strong>Error:</strong> 
-              <div className="json-viewer" style={{ marginTop: '0.5rem' }}>
-                {instance.error}
-              </div>
+              <JsonViewer data={instance.error} className="mt-2" />
             </div>
           )}
         </div>
@@ -252,17 +251,13 @@ export const InstanceDetail: React.FC = () => {
 
       <div className="card">
         <h2>Input Data</h2>
-        <div className="json-viewer">
-          {JSON.stringify(instance.input, null, 2)}
-        </div>
+        <JsonViewer data={instance.input} />
       </div>
 
       {instance.output && (
         <div className="card">
           <h2>Output Data</h2>
-          <div className="json-viewer">
-            {JSON.stringify(instance.output, null, 2)}
-          </div>
+          <JsonViewer data={instance.output} />
         </div>
       )}
 
@@ -325,25 +320,19 @@ export const InstanceDetail: React.FC = () => {
                     {step.error && (
                       <div style={{ marginTop: '0.5rem' }}>
                         <strong>Error:</strong>
-                        <div className="json-viewer" style={{ marginTop: '0.25rem' }}>
-                          {step.error}
-                        </div>
+                        <JsonViewer data={step.error} className="mt-1" maxHeight="200px" />
                       </div>
                     )}
                     {step.input && (
                       <div style={{ marginTop: '0.5rem' }}>
                         <strong>Input:</strong>
-                        <div className="json-viewer" style={{ marginTop: '0.25rem' }}>
-                          {JSON.stringify(step.input, null, 2)}
-                        </div>
+                        <JsonViewer data={step.input} className="mt-1" maxHeight="200px" />
                       </div>
                     )}
                     {step.output && (
                       <div style={{ marginTop: '0.5rem' }}>
                         <strong>Output:</strong>
-                        <div className="json-viewer" style={{ marginTop: '0.25rem' }}>
-                          {JSON.stringify(step.output, null, 2)}
-                        </div>
+                        <JsonViewer data={step.output} className="mt-1" maxHeight="200px" />
                       </div>
                     )}
                   </li>
@@ -376,9 +365,7 @@ export const InstanceDetail: React.FC = () => {
                       <td>{event.step_id || '-'}</td>
                       <td>
                         {event.payload && (
-                          <div className="json-viewer" style={{ maxHeight: '100px' }}>
-                            {JSON.stringify(event.payload, null, 2)}
-                          </div>
+                          <JsonViewer data={event.payload} maxHeight="100px" />
                         )}
                       </td>
                     </tr>

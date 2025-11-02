@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <title>Floxy Manager</title>
+    <script>
+      (function(){
+        try {
+          var t = localStorage.getItem('theme');
+          var d = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if ((t === 'dark') || (!t && d)) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
 </head>
 <body>
     <div id="root"></div>

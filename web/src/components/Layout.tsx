@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import logoImage from '../assets/floxy_logo.png';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,33 +8,242 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(49); // Default fallback
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('sidebarOpen');
+    return stored === null ? true : stored === 'true';
+  });
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.offsetHeight;
+        setHeaderHeight(height);
+      }
+    };
+
+    // Use requestAnimationFrame to ensure DOM is fully rendered
+    requestAnimationFrame(() => {
+      updateHeaderHeight();
+      // Also update after a small delay to catch any async rendering
+      setTimeout(updateHeaderHeight, 0);
+    });
+
+    window.addEventListener('resize', updateHeaderHeight);
+    return () => window.removeEventListener('resize', updateHeaderHeight);
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') root.classList.add('dark');
+    else root.classList.remove('dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', String(sidebarOpen));
+  }, [sidebarOpen]);
+
+  const NavLink: React.FC<{ to: string; label: string; icon: React.ReactNode }> = ({ to, label, icon }) => {
+    const active = location.pathname === to || location.pathname.startsWith(to + '/');
+    return (
+      <Link
+        to={to}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium group ${
+          active 
+            ? 'glass-strong text-slate-900 dark:text-[#ff6b35] shadow-sm font-semibold' 
+            : 'text-slate-700 dark:text-[#ff4500] hover:text-slate-900 dark:hover:text-[#ff6b35]'
+        } ${!sidebarOpen ? 'justify-center' : ''}`}
+        title={!sidebarOpen ? label : undefined}
+        style={!active ? {
+          transition: 'all 0.2s ease',
+        } : {}}
+        onMouseEnter={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)';
+            e.currentTarget.style.backdropFilter = 'blur(12px) saturate(150%)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.backdropFilter = 'none';
+          }
+        }}
+        onClick={() => {
+          // Close sidebar on mobile after click
+          if (window.innerWidth < 768) {
+            setSidebarOpen(false);
+          }
+        }}
+      >
+        <span className={`flex-shrink-0 ${active ? 'text-slate-900 dark:text-[#ff6b35]' : 'text-slate-600 dark:text-[#ff4500]'}`}>
+          {icon}
+        </span>
+        {sidebarOpen && <span className="whitespace-nowrap">{label}</span>}
+      </Link>
+    );
+  };
 
   return (
-    <div>
-      <header className="header">
+    <div className="min-h-screen flex flex-col">
+      {/* Top bar - header */}
+      <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-slate-200/50 dark:border-slate-700/50">
         <div className="container">
-          <nav className="nav">
-            <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
-              Dashboard
-            </Link>
-            <Link to="/workflows" className={location.pathname.startsWith('/workflows') ? 'active' : ''}>
-              Workflows
-            </Link>
-            <Link to="/instances" className={location.pathname.startsWith('/instances') ? 'active' : ''}>
-              Instances
-            </Link>
-            <Link to="/dlq" className={location.pathname.startsWith('/dlq') ? 'active' : ''}>
-              Dead Letter Queue
-            </Link>
-            <Link to="/stats" className={location.pathname === '/stats' ? 'active' : ''}>
-              Statistics
-            </Link>
-          </nav>
+          <div className="flex items-center justify-between h-12">
+            <div className="flex items-center gap-3">
+              {/* Mobile menu button */}
+              <button 
+                className="md:hidden btn btn-outline p-2" 
+                onClick={() => setSidebarOpen(s => !s)} 
+                aria-label="Toggle menu"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              {/* Logo */}
+              <div className="flex items-center" style={{ marginLeft: '-100px' }}>
+                <img 
+                  src={logoImage} 
+                  alt="Floxy Manager" 
+                  className="h-12 w-auto object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Theme toggle button */}
+            <div className="flex items-center gap-2">
+              <button
+                className="btn btn-outline p-2"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                aria-label="Toggle theme"
+                title="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
-      <main className="container">
-        {children}
-      </main>
+
+      {/* Main content area with sidebar and content */}
+      <div className="flex flex-1 min-h-screen" style={{ paddingTop: `${headerHeight}px` }}>
+        {/* Sidebar - fixed position */}
+        <aside className={`glass-strong transition-all duration-300 flex flex-col fixed z-30 ${
+          sidebarOpen ? 'w-64' : 'w-16'
+        }`}
+        style={{
+          top: `${headerHeight}px`,
+          height: `calc(100vh - ${headerHeight}px)`,
+          left: 0
+        }}>
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+            <NavLink 
+              to="/" 
+              label="Dashboard"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              }
+            />
+            <NavLink 
+              to="/workflows" 
+              label="Workflows"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              }
+            />
+            <NavLink 
+              to="/instances" 
+              label="Instances"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              }
+            />
+            <NavLink 
+              to="/dlq" 
+              label="Dead Letter Queue"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                </svg>
+              }
+            />
+            <NavLink 
+              to="/stats" 
+              label="Statistics"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              }
+            />
+          </nav>
+
+          {/* Sidebar Footer - Collapse button */}
+          <div className="p-2 border-t border-slate-200/50 dark:border-slate-700/50">
+            <button
+              className={`btn btn-outline w-full justify-center ${!sidebarOpen ? 'px-2' : ''}`}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              title={!sidebarOpen ? 'Expand menu' : undefined}
+            >
+              {sidebarOpen ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              )}
+              {sidebarOpen && <span className="ml-2">Collapse</span>}
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <div className={`flex-1 transition-all duration-300 min-w-0 ${
+          sidebarOpen ? 'ml-64' : 'ml-16'
+        }`}>
+          <main className="container py-6 h-full overflow-auto">
+            {children}
+          </main>
+        </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };

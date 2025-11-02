@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { JsonViewer } from '../components/JsonViewer';
 
 interface DeadLetterItem {
   id: number;
@@ -182,9 +183,7 @@ export const DLQDetail: React.FC = () => {
       {dlqItem.error && (
         <div className="card">
           <h2>Error Details</h2>
-          <div className="json-viewer" style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
-            {dlqItem.error}
-          </div>
+          <JsonViewer data={dlqItem.error} />
         </div>
       )}
 

@@ -292,9 +292,6 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                     width: '100%',
                     height: '600px',
                     position: 'relative',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    backgroundColor: '#f9fafb',
                     overflow: 'auto'
                 }}
             >
@@ -443,7 +440,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Completed</span>
                     </div>
@@ -453,7 +451,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Failed</span>
                     </div>
@@ -463,7 +462,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Running</span>
                     </div>
@@ -473,7 +473,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Rolled Back</span>
                     </div>
@@ -483,7 +484,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+                            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Pending</span>
                     </div>
@@ -499,7 +501,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             fontSize: '10px',
                             color: 'white',
                             fontWeight: '700',
-                            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)'
+                            boxShadow: '0 4px 12px rgba(139, 92, 246, 0.4)',
+                            flexShrink: 0
                         }}>
                             ⚡
                         </div>
@@ -517,7 +520,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             fontSize: '12px',
                             color: 'white',
                             fontWeight: '700',
-                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)'
+                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)',
+                            flexShrink: 0
                         }}>
                             👤
                         </div>
@@ -529,7 +533,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Waiting Decision</span>
                     </div>
@@ -539,7 +544,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Confirmed</span>
                     </div>
@@ -549,7 +555,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Rejected</span>
                     </div>
@@ -559,7 +566,8 @@ export const WorkflowGraph: React.FC<WorkflowGraphProps> = ({
                             height: '16px',
                             background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+                            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+                            flexShrink: 0
                         }}></div>
                         <span>Paused</span>
                     </div>

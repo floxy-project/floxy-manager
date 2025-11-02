@@ -78,19 +78,17 @@ func (s *Server) Start() error {
 	// Serve static files from web/dist directory
 	staticFS := http.FileServer(http.Dir("./web/dist/"))
 
-	// Handle static assets (JS, CSS, etc.)
+	// Handle static assets - register BEFORE catch-all route
+	// This must be registered first to avoid being caught by the SPA fallback
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./web/dist/assets/"))))
 	mux.Handle("/bundle.js", staticFS)
 	mux.Handle("/bundle.js.LICENSE.txt", staticFS)
 
 	// Serve index.html for all other routes (SPA fallback)
+	// This catch-all must be registered LAST
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Check if the request is for a static file
-		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
-			http.ServeFile(w, r, "./web/dist/index.html")
-			return
-		}
-
-		// For all other routes, serve index.html (SPA fallback)
+		// Skip static file requests - these should be handled by registered routes above
+		// Just serve index.html for SPA routing
 		http.ServeFile(w, r, "./web/dist/index.html")
 	})
 

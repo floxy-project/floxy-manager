@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { WorkflowGraph } from '../components/WorkflowGraph';
+import { JsonViewer } from '../components/JsonViewer';
 
 interface WorkflowDefinition {
     id: string;
@@ -92,9 +93,7 @@ export const WorkflowDetail: React.FC = () => {
 
             <div className="card">
                 <h2>Raw Definition JSON</h2>
-                <div className="json-viewer">
-                    {JSON.stringify(workflow.definition, null, 2)}
-                </div>
+                <JsonViewer data={workflow.definition} />
             </div>
 
             <div className="card">

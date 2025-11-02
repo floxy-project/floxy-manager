@@ -595,74 +595,102 @@ h3 {
 
 /* Decision modal styles */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(4px);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999 !important;
     padding: 1rem;
+    margin: 0 !important;
 }
 
 .modal-content {
-    background: rgba(255, 255, 255, 0.95);
+    background: #ffffff !important;
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    border-radius: 16px !important;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(0, 0, 0, 0.05) !important;
     max-width: 500px;
     width: 100%;
     max-height: 90vh;
-    overflow-y: auto;
+    overflow: hidden !important;
     position: relative;
+    margin: 1rem !important;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    flex-direction: row !important;
+    padding: 1.5rem 2rem 1.5rem 2rem !important;
+    padding-top: 1.5rem !important;
+    padding-right: 3.5rem !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 1) !important;
+    gap: 1rem;
+    position: relative;
+    min-height: 60px;
 }
 
 .modal-header h3 {
-    margin: 0;
-    color: #1f2937;
-    font-size: 1.25rem;
-    font-weight: 700;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #1f2937 !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    flex: 1;
+    line-height: 1.5;
 }
 
 .btn-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
+    position: absolute !important;
+    top: 1rem !important;
+    right: 1rem !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+    border: none !important;
+    font-size: 1.5rem !important;
     cursor: pointer;
-    color: #6b7280;
-    padding: 0.25rem;
-    border-radius: 4px;
+    color: #6b7280 !important;
+    padding: 0.5rem !important;
+    border-radius: 8px !important;
     transition: all 0.2s ease;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1;
+    z-index: 10;
 }
 
 .btn-close:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: #374151;
+    background: rgba(0, 0, 0, 0.1) !important;
+    color: #374151 !important;
+    transform: scale(1.05);
 }
 
 .modal-body {
-    padding: 2rem;
+    padding: 2rem !important;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding: 1.5rem 2rem;
-    border-top: 1px solid rgba(0,0,0,0.1);
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 0.75rem !important;
+    padding: 1.5rem 2rem !important;
+    border-top: 1px solid rgba(226, 232, 240, 1) !important;
 }
 
 .form-group {
