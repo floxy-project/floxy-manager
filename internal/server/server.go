@@ -78,6 +78,14 @@ func New(cfg *config.Config) (*Server, error) {
 func (s *Server) Start() error {
 	mux := s.floxy.Mux()
 
+	// Create a separate mux for auth endpoints to ensure proper routing
+	authMux := http.NewServeMux()
+	authMux.HandleFunc("/login", s.handleLogin)
+
+	// Mount auth mux at /api/auth prefix
+	// This ensures auth routes are handled before floxy API routes
+	mux.Handle("/api/auth/", http.StripPrefix("/api/auth", authMux))
+
 	// Serve static files from web/dist directory
 	staticFS := http.FileServer(http.Dir("./web/dist/"))
 
@@ -87,12 +95,14 @@ func (s *Server) Start() error {
 	mux.Handle("/bundle.js", staticFS)
 	mux.Handle("/bundle.js.LICENSE.txt", staticFS)
 
-	// Auth API - Login endpoint (stub/mock)
-	mux.HandleFunc("/api/auth/login", s.handleLogin)
-
 	// Serve index.html for all other routes (SPA fallback)
 	// This catch-all must be registered LAST
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Skip API routes - these should be handled by registered routes above
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
 		// Skip static file requests - these should be handled by registered routes above
 		// Just serve index.html for SPA routing
 		http.ServeFile(w, r, "./web/dist/index.html")

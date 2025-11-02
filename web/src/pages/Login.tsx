@@ -139,7 +139,7 @@ export const Login: React.FC = () => {
                 className="h-16 w-auto object-contain"
               />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Log In</h1>
+            <h1 className="text-3xl font-bold mb-2 text-slate-600" >Log In</h1>
             <p className="text-slate-600 dark:text-[#ff4500]">
               Enter your credentials to access Floxy Manager
             </p>

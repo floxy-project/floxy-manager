@@ -19,13 +19,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const stored = localStorage.getItem('sidebarOpen');
     return stored === null ? true : stored === 'true';
   });
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'light';
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
-  });
 
   useEffect(() => {
     const updateHeaderHeight = () => {
@@ -47,11 +40,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    // Ensure light theme is always active (remove dark class if present)
     const root = document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    root.classList.remove('dark');
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('sidebarOpen', String(sidebarOpen));
@@ -126,25 +118,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
 
-            {/* Right side: Theme toggle, Profile, Logout */}
+            {/* Right side: Profile, Logout */}
             <div className="flex items-center gap-2">
-              <button
-                className="btn btn-outline p-2"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                aria-label="Toggle theme"
-                title="Toggle theme"
-              >
-                {theme === 'dark' ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                )}
-              </button>
-
               {isAuthenticated && user && (
                 <div className="relative">
                   <button
@@ -277,7 +252,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
               )}
-              {sidebarOpen && <span className="ml-2">Collapse</span>}
+              {sidebarOpen && <span className="ml-2"></span>}
             </button>
           </div>
         </aside>
