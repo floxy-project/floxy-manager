@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logoImage from '../assets/floxy_logo.png';
+import { useAuth } from '../hooks/useAuth';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,8 +9,11 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(49); // Default fallback
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true;
     const stored = localStorage.getItem('sidebarOpen');
@@ -122,7 +126,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
 
-            {/* Theme toggle button */}
+            {/* Right side: Theme toggle, Profile, Logout */}
             <div className="flex items-center gap-2">
               <button
                 className="btn btn-outline p-2"
@@ -140,6 +144,57 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </svg>
                 )}
               </button>
+
+              {isAuthenticated && user && (
+                <div className="relative">
+                  <button
+                    className="btn btn-outline p-2"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    aria-label="User menu"
+                    title={user.username}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </button>
+
+                  {showUserMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-48 glass-strong rounded-lg shadow-lg z-50 border border-slate-200/50 dark:border-[#3e3e42] overflow-hidden">
+                        <div className="px-4 py-3 border-b border-slate-200/50 dark:border-[#3e3e42]">
+                          <p className="text-sm font-semibold text-slate-900 dark:text-[#ff6b35]">
+                            {user.username}
+                          </p>
+                          {user.email && (
+                            <p className="text-xs text-slate-600 dark:text-[#ff4500] mt-1">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              logout();
+                              setShowUserMenu(false);
+                              navigate('/login');
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-[#ff6b35] hover:bg-slate-100 dark:hover:bg-[#2d2d30] transition-colors flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Logout
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
