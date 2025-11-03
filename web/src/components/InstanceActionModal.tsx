@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
 
+import { authFetch } from '../utils/api';
+
 interface InstanceActionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAction: (reason: string) => void;
   instanceId: string;
   actionType: 'cancel' | 'abort';
+  projectId: string; // explicit projectId to pass RBAC middleware
 }
 
 export const InstanceActionModal: React.FC<InstanceActionModalProps> = ({
@@ -14,7 +17,8 @@ export const InstanceActionModal: React.FC<InstanceActionModalProps> = ({
   onClose,
   onAction,
   instanceId,
-  actionType
+  actionType,
+  projectId,
 }) => {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,10 +28,11 @@ export const InstanceActionModal: React.FC<InstanceActionModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/instances/${instanceId}/${actionType}`, {
+      const response = await authFetch(`/api/instances/${instanceId}/${actionType}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Project-ID': String(projectId),
         },
         body: JSON.stringify({ reason }),
       });

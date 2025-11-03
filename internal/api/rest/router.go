@@ -1,7 +1,9 @@
 package rest
 
 import (
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -17,20 +19,22 @@ import (
 	"github.com/rom8726/floxy-manager/internal/api/rest/handlers"
 	appcontext "github.com/rom8726/floxy-manager/internal/context"
 	"github.com/rom8726/floxy-manager/internal/contract"
+	"github.com/rom8726/floxy-manager/internal/domain"
 )
 
 type Router struct {
-	router           *httprouter.Router
-	floxyMux         http.Handler
-	staticMux        http.Handler
-	authHandler      *handlers.AuthHandler
-	passwordHandler  *handlers.PasswordHandler
-	twoFAHandler     *handlers.TwoFAHandler
-	ssoHandler       *handlers.SSOHandler
-	tenantsHandler   *handlers.TenantsHandler
-	projectsHandler  *handlers.ProjectsHandler
-	workflowsHandler *handlers.WorkflowsHandler
-	usersHandler     *handlers.UsersHandler
+	router             *httprouter.Router
+	floxyMux           http.Handler
+	staticMux          http.Handler
+	authHandler        *handlers.AuthHandler
+	passwordHandler    *handlers.PasswordHandler
+	twoFAHandler       *handlers.TwoFAHandler
+	ssoHandler         *handlers.SSOHandler
+	tenantsHandler     *handlers.TenantsHandler
+	projectsHandler    *handlers.ProjectsHandler
+	workflowsHandler   *handlers.WorkflowsHandler
+	usersHandler       *handlers.UsersHandler
+	permissionsService contract.PermissionsService
 }
 
 func NewRouter(
@@ -143,17 +147,18 @@ func NewRouter(
 	staticMux.Handle("/bundle.js.LICENSE.txt", staticFS)
 
 	return &Router{
-		router:           router,
-		floxyMux:         floxyMux,
-		staticMux:        staticMux,
-		authHandler:      authHandler,
-		passwordHandler:  passwordHandler,
-		twoFAHandler:     twoFAHandler,
-		ssoHandler:       ssoHandler,
-		tenantsHandler:   tenantsHandler,
-		projectsHandler:  projectsHandler,
-		workflowsHandler: workflowsHandler,
-		usersHandler:     usersHandler,
+		router:             router,
+		floxyMux:           floxyMux,
+		staticMux:          staticMux,
+		authHandler:        authHandler,
+		passwordHandler:    passwordHandler,
+		twoFAHandler:       twoFAHandler,
+		ssoHandler:         ssoHandler,
+		tenantsHandler:     tenantsHandler,
+		projectsHandler:    projectsHandler,
+		workflowsHandler:   workflowsHandler,
+		usersHandler:       usersHandler,
+		permissionsService: permissionsService,
 	}, nil
 }
 
@@ -172,11 +177,96 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if strings.HasPrefix(path, "/api/") {
+		// Enforce strict RBAC for mutating plugin API calls
+		if isMutatingMethod(req.Method) {
+			// Require auth: user must be set in context by outer middleware
+			if appcontext.UserID(req.Context()) == 0 {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			projID, ok := extractProjectID(req)
+			if !ok {
+				http.Error(w, "project_id is required (query ?project_id=... or header X-Project-ID or Referer path)", http.StatusBadRequest)
+				return
+			}
+
+			if err := r.permissionsService.CanManageProject(req.Context(), domain.ProjectID(projID)); err != nil {
+				if errors.Is(err, domain.ErrPermissionDenied) {
+					http.Error(w, "Forbidden", http.StatusForbidden)
+					return
+				}
+				if errors.Is(err, domain.ErrUserNotFound) {
+					http.Error(w, "Unauthorized", http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+		}
+
 		r.floxyMux.ServeHTTP(w, req)
 		return
 	}
 
 	http.ServeFile(w, req, "./web/dist/index.html")
+}
+
+func isMutatingMethod(m string) bool {
+	switch m {
+	case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+		return true
+	default:
+		return false
+	}
+}
+
+// extractProjectID tries multiple sources to determine project ID for RBAC checks:
+// 1) Query param "project_id"
+// 2) Header "X-Project-ID"
+// 3) Referer path segment: /tenants/{tid}/projects/{pid}/...
+func extractProjectID(r *http.Request) (int, bool) {
+	// Query param
+	if v := r.URL.Query().Get("project_id"); v != "" {
+		if id, err := strconv.Atoi(v); err == nil && id > 0 {
+			return id, true
+		}
+	}
+	// Header
+	if v := r.Header.Get("X-Project-ID"); v != "" {
+		if id, err := strconv.Atoi(v); err == nil && id > 0 {
+			return id, true
+		}
+	}
+	// Referer parsing
+	if ref := r.Referer(); ref != "" {
+		if pid, ok := parseProjectIDFromURLPath(ref); ok {
+			return pid, true
+		}
+	}
+	return 0, false
+}
+
+func parseProjectIDFromURLPath(rawURL string) (int, bool) {
+	// We only need the path component; be tolerant to raw paths too
+	u, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err == nil && u.URL != nil {
+		return findProjectIDInPath(u.URL.Path)
+	}
+	// Fallback: treat rawURL as path
+	return findProjectIDInPath(rawURL)
+}
+
+func findProjectIDInPath(path string) (int, bool) {
+	segs := strings.Split(path, "/")
+	for i := 0; i < len(segs); i++ {
+		if segs[i] == "projects" && i+1 < len(segs) {
+			if id, err := strconv.Atoi(segs[i+1]); err == nil && id > 0 {
+				return id, true
+			}
+		}
+	}
+	return 0, false
 }
 
 func wrapHandler(fn http.HandlerFunc) httprouter.Handle {

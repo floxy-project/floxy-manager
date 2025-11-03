@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CleanupModal } from '../components/CleanupModal';
 import { authFetch } from '../utils/api';
+import { useRBAC } from '../auth/permissions';
 
 interface SummaryStats {
   total_workflows: number;
@@ -28,6 +29,7 @@ interface ActiveWorkflow {
 export const Dashboard: React.FC = () => {
   const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const [summary, setSummary] = useState<SummaryStats | null>(null);
+  const rbac = useRBAC(projectId);
   const [activeWorkflows, setActiveWorkflows] = useState<ActiveWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -157,23 +159,25 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2>Administrative Actions</h2>
+      {rbac.canManageProject() && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2>Administrative Actions</h2>
+          </div>
+          <p className="text-slate-600 dark:text-[#ff4500]500 mb-4">
+            Manage workflow instances and perform system maintenance tasks.
+          </p>
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowCleanupModal(true)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Cleanup Old Workflows
+          </button>
         </div>
-        <p className="text-slate-600 dark:text-[#ff4500]500 mb-4">
-          Manage workflow instances and perform system maintenance tasks.
-        </p>
-        <button
-          className="btn btn-danger"
-          onClick={() => setShowCleanupModal(true)}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Cleanup Old Workflows
-        </button>
-      </div>
+      )}
 
       <div className="card">
         <h2>Active Workflows</h2>
@@ -252,6 +256,7 @@ export const Dashboard: React.FC = () => {
         isOpen={showCleanupModal}
         onClose={() => setShowCleanupModal(false)}
         onCleanup={handleCleanup}
+        projectId={projectId || ''}
       />
     </div>
   );

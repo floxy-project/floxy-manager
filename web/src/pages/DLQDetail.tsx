@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import { useRBAC } from '../auth/permissions';
 import { JsonViewer } from '../components/JsonViewer';
 
 interface DeadLetterItem {
@@ -19,6 +20,7 @@ interface DeadLetterItem {
 export const DLQDetail: React.FC = () => {
   const { tenantId, projectId, id } = useParams<{ tenantId: string; projectId: string; id: string }>();
   const [dlqItem, setDlqItem] = useState<DeadLetterItem | null>(null);
+  const rbac = useRBAC(projectId);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRequeuing, setIsRequeuing] = useState(false);
@@ -89,10 +91,11 @@ export const DLQDetail: React.FC = () => {
     setIsRequeuing(true);
     try {
       const newInput = JSON.parse(editedInput);
-      const response = await fetch(`/api/dlq/${id}/requeue`, {
+      const response = await authFetch(`/api/dlq/${id}/requeue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Project-ID': String(projectId),
         },
         body: JSON.stringify({ new_input: newInput }),
       });
@@ -188,53 +191,55 @@ export const DLQDetail: React.FC = () => {
         </div>
       )}
 
-      <div className="card">
-        <h2>Requeue Item</h2>
-        <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-          Edit the input data below and click "Requeue" to send this item back to the workflow queue.
-        </p>
-        
-        <div className="form-group">
-          <label htmlFor="input-data">Input Data (JSON):</label>
-          <textarea
-            id="input-data"
-            value={editedInput}
-            onChange={(e) => handleInputChange(e.target.value)}
-            rows={15}
-            style={{ 
-              width: '100%', 
-              padding: '0.75rem', 
-              border: inputError ? '1px solid #ef4444' : '1px solid #d1d5db', 
-              borderRadius: '8px',
-              fontFamily: 'JetBrains Mono, Fira Code, Courier New, monospace',
-              fontSize: '0.9rem',
-              backgroundColor: inputError ? '#fef2f2' : 'white'
-            }}
-          />
-          {inputError && (
-            <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              {inputError}
-            </div>
-          )}
+      {rbac.canManageProject() && (
+        <div className="card">
+          <h2>Requeue Item</h2>
+          <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
+            Edit the input data below and click "Requeue" to send this item back to the workflow queue.
+          </p>
+          
+          <div className="form-group">
+            <label htmlFor="input-data">Input Data (JSON):</label>
+            <textarea
+              id="input-data"
+              value={editedInput}
+              onChange={(e) => handleInputChange(e.target.value)}
+              rows={15}
+              style={{ 
+                width: '100%', 
+                padding: '0.75rem', 
+                border: inputError ? '1px solid #ef4444' : '1px solid #d1d5db', 
+                borderRadius: '8px',
+                fontFamily: 'JetBrains Mono, Fira Code, Courier New, monospace',
+                fontSize: '0.9rem',
+                backgroundColor: inputError ? '#fef2f2' : 'white'
+              }}
+            />
+            {inputError && (
+              <div style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                {inputError}
+              </div>
+            )}
+          </div>
+  
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditedInput(JSON.stringify(dlqItem.input, null, 2))}
+              disabled={isRequeuing}
+            >
+              Reset to Original
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleRequeue}
+              disabled={isRequeuing || !!inputError}
+            >
+              {isRequeuing ? 'Requeuing...' : 'Requeue Item'}
+            </button>
+          </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setEditedInput(JSON.stringify(dlqItem.input, null, 2))}
-            disabled={isRequeuing}
-          >
-            Reset to Original
-          </button>
-          <button
-            className="btn btn-primary"
-            onClick={handleRequeue}
-            disabled={isRequeuing || !!inputError}
-          >
-            {isRequeuing ? 'Requeuing...' : 'Requeue Item'}
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

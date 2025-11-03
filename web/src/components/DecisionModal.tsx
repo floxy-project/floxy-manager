@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
 
+import { authFetch } from '../utils/api';
+
 interface DecisionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (message: string) => void;
   onReject: (message: string) => void;
   instanceId: string;
+  projectId: string; // explicit projectId to pass RBAC middleware
 }
 
 export const DecisionModal: React.FC<DecisionModalProps> = ({
@@ -14,7 +17,8 @@ export const DecisionModal: React.FC<DecisionModalProps> = ({
   onClose,
   onConfirm,
   onReject,
-  instanceId
+  instanceId,
+  projectId,
 }) => {
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,10 +28,11 @@ export const DecisionModal: React.FC<DecisionModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/instances/${instanceId}/make-decision/${action}`, {
+      const response = await authFetch(`/api/instances/${instanceId}/make-decision/${action}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Project-ID': String(projectId),
         },
         body: JSON.stringify({ message }),
       });

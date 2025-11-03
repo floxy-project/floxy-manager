@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import { useRBAC } from '../auth/permissions';
 
 import { WorkflowGraph } from '../components/WorkflowGraph';
 import { DecisionModal } from '../components/DecisionModal';
@@ -132,6 +133,8 @@ export const InstanceDetail: React.FC = () => {
     }
   };
 
+  const rbac = useRBAC(projectId);
+
   // Function to determine if decision buttons are needed
   const needsDecision = () => {
     if (!instance || !steps.length) return false;
@@ -228,7 +231,7 @@ export const InstanceDetail: React.FC = () => {
         </div>
         
         {/* Decision buttons */}
-        {needsDecision() && (
+        {needsDecision() && rbac.canManageProject() && (
           <div className="decision-buttons">
             <div style={{ flex: 1 }}>
               <strong>Decision Required:</strong>
@@ -246,7 +249,7 @@ export const InstanceDetail: React.FC = () => {
         )}
 
         {/* Instance action buttons */}
-        {isActiveInstance() && (
+        {isActiveInstance() && rbac.canManageProject() && (
           <div className="decision-buttons">
             <div style={{ flex: 1 }}>
               <strong>Instance Actions:</strong>
@@ -422,6 +425,7 @@ export const InstanceDetail: React.FC = () => {
         onConfirm={handleDecisionConfirm}
         onReject={handleDecisionReject}
         instanceId={id || ''}
+        projectId={projectId || ''}
       />
 
       {/* Instance action modal */}
@@ -431,6 +435,7 @@ export const InstanceDetail: React.FC = () => {
         onAction={handleInstanceAction}
         instanceId={id || ''}
         actionType={actionType}
+        projectId={projectId || ''}
       />
     </div>
   );
