@@ -135,6 +135,13 @@ export interface SSOCallbackResponse {
   is_tmp_password?: boolean;
 }
 
+export interface SSOProvider {
+  name: string;
+  display_name: string;
+  icon_url: string;
+  type: string;
+}
+
 export interface CreateTenantRequest {
   name: string;
 }
@@ -199,6 +206,14 @@ const apiClient = {
 
   sSOCallback: async (data: SSOCallbackRequest): Promise<AxiosResponse<SSOCallbackResponse>> => {
     return api.post('/api/v1/auth/sso/callback', data);
+  },
+
+  getSSOProviders: async (): Promise<AxiosResponse<{ providers: SSOProvider[] }>> => {
+    return api.get('/api/v1/auth/sso/providers');
+  },
+
+  sSOInitiate: async (providerName: string): Promise<AxiosResponse<{ redirect_url: string }>> => {
+    return api.post('/api/v1/auth/sso/initiate', { provider_name: providerName });
   },
 
   createTenant: async (data: CreateTenantRequest): Promise<AxiosResponse<Tenant>> => {

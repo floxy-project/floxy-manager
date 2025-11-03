@@ -18,6 +18,7 @@ import { TwoFAVerify } from './pages/TwoFAVerify';
 import { Account } from './pages/Account';
 import { Admin } from './pages/Admin';
 import { Memberships } from './pages/Memberships';
+import SSOCallback from './pages/SSOCallback';
 import { useAuth } from './auth/AuthContext';
 
 // Protected Route Component
@@ -56,6 +57,7 @@ function App() {
           <Login />
         </PublicRoute>
       } />
+      <Route path="/auth/callback" element={<SSOCallback />} />
       <Route path="/change-password" element={
         <ProtectedRoute>
           <ChangePassword />

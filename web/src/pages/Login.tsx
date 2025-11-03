@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import logoImage from '../assets/floxy_logo.png';
+import SSOButton from '../components/SSOButton';
 
 interface LoginFormData {
   usernameOrEmail: string;
@@ -25,6 +26,7 @@ export const Login: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [hasSSOProviders, setHasSSOProviders] = useState(false);
 
   useEffect(() => {
     // Check for success message from location state
@@ -233,6 +235,26 @@ export const Login: React.FC = () => {
               )}
             </button>
           </form>
+
+          {hasSSOProviders && (
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-300 dark:border-[#3e3e42]"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white dark:bg-[#1e1e1e] text-slate-500 dark:text-slate-400">Or</span>
+                </div>
+              </div>
+              <div className="mt-6">
+                <SSOButton 
+                  fullWidth 
+                  disabled={isLoading} 
+                  onProvidersLoaded={setHasSSOProviders}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
