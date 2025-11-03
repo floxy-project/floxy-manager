@@ -207,18 +207,28 @@ func (h *SSOHandler) ACS(w http.ResponseWriter, r *http.Request) {
 	)
 	if err != nil {
 		slog.Error("SSO assert failed", "error", err)
-		if errors.Is(err, domain.ErrInactiveUser) {
-			respondError(w, http.StatusUnauthorized, "user is inactive")
 
-			return
+		// Redirect to the frontend error page instead of returning JSON error
+		errorMsg := "SSO authentication failed"
+		errorDetails := ""
+
+		if errors.Is(err, domain.ErrInactiveUser) {
+			errorMsg = "User is inactive"
+			errorDetails = "Your account has been deactivated. Please contact your administrator."
+		} else {
+			// Extract error details if available
+			if errStr := err.Error(); errStr != "" {
+				errorDetails = errStr
+			}
 		}
 
-		respondError(w, http.StatusUnauthorized, "SSO authentication failed")
+		errorURL := h.buildFrontErrorLocation(errorMsg, errorDetails)
+		http.Redirect(w, r, errorURL, http.StatusFound)
 
 		return
 	}
 
-	// Build redirect URL to frontend
+	// Build redirect URL to the frontend
 	redirectURL := h.buildFrontLoginSuccessLocation(accessToken, refreshToken)
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
@@ -229,4 +239,14 @@ func (h *SSOHandler) buildFrontLoginSuccessLocation(accessToken, refreshToken st
 	values.Set("access_token", accessToken)
 	values.Set("refresh_token", refreshToken)
 	return h.frontendURL + "/auth/saml/success?" + values.Encode()
+}
+
+// buildFrontErrorLocation builds the frontend error URL with error information.
+func (h *SSOHandler) buildFrontErrorLocation(errorMsg, errorDetails string) string {
+	values := url.Values{}
+	values.Set("error", errorMsg)
+	if errorDetails != "" {
+		values.Set("details", errorDetails)
+	}
+	return h.frontendURL + "/auth/saml/error?" + values.Encode()
 }

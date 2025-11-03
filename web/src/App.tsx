@@ -19,6 +19,7 @@ import { Account } from './pages/Account';
 import { Admin } from './pages/Admin';
 import { Memberships } from './pages/Memberships';
 import SSOCallback from './pages/SSOCallback';
+import SSOError from './pages/SSOError';
 import { useAuth } from './auth/AuthContext';
 
 // Protected Route Component
@@ -59,6 +60,7 @@ function App() {
       } />
       <Route path="/auth/callback" element={<SSOCallback />} />
       <Route path="/auth/saml/success" element={<SSOCallback />} />
+      <Route path="/auth/saml/error" element={<SSOError />} />
       <Route path="/change-password" element={
         <ProtectedRoute>
           <ChangePassword />
