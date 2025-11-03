@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { authFetch } from '../utils/api';
 
 interface ActiveWorkflow {
-  id: number;
+  instance_id: number;
   workflow_id: string;
   workflow_name: string;
   status: string;
@@ -14,29 +15,46 @@ interface ActiveWorkflow {
   rolled_back_steps: number;
 }
 
+interface InstancesResponse {
+  items: ActiveWorkflow[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
 export const Instances: React.FC = () => {
+  const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const [instances, setInstances] = useState<ActiveWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
-    const fetchInstances = async () => {
-      try {
-        const response = await fetch('/api/instances/active');
-        if (!response.ok) {
-          throw new Error('Failed to fetch instances');
-        }
-        const data = await response.json();
-        setInstances(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (tenantId && projectId) {
+      fetchInstances();
+    }
+  }, [tenantId, projectId, currentPage]);
 
-    fetchInstances();
-  }, []);
+  const fetchInstances = async () => {
+    try {
+      setLoading(true);
+      const response = await authFetch(`/api/v1/active-workflows?tenant_id=${tenantId}&project_id=${projectId}&page=${currentPage}&page_size=${pageSize}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch instances');
+      }
+      const data: InstancesResponse = await response.json();
+      setInstances(data.items);
+      setTotalItems(data.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   const formatDuration = (started: string, updated: string) => {
     const seconds = Math.round((new Date(updated).getTime() - new Date(started).getTime()) / 1000);
@@ -105,8 +123,8 @@ export const Instances: React.FC = () => {
                 {instances.map((instance) => {
                   const progress = getProgressPercentage(instance.completed_steps, instance.total_steps);
                   return (
-                    <tr key={instance.id}>
-                      <td className="font-mono text-xs">{instance.id}</td>
+                    <tr key={instance.instance_id}>
+                      <td className="font-mono text-xs">{instance.instance_id}</td>
                       <td>
                         <div className="font-medium">{instance.workflow_name || instance.workflow_id}</div>
                         <div className="text-xs text-slate-500 dark:text-[#ff4500]500 font-mono mt-0.5">
@@ -146,7 +164,10 @@ export const Instances: React.FC = () => {
                         {new Date(instance.started_at).toLocaleString()}
                       </td>
                       <td>
-                        <Link to={`/instances/${instance.id}`} className="btn btn-primary text-xs py-1.5 px-3">
+                        <Link 
+                          to={`/tenants/${tenantId}/projects/${projectId}/instances/${instance.instance_id}`} 
+                          className="btn btn-primary text-xs py-1.5 px-3"
+                        >
                           View Details
                         </Link>
                       </td>
@@ -155,6 +176,43 @@ export const Instances: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <button
+              className="btn btn-outline"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Previous
+            </button>
+            <div className="px-4 py-2 rounded-lg" style={{
+              background: 'rgba(255, 255, 255, 0.5)',
+              backdropFilter: 'blur(12px) saturate(150%)',
+              WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)'
+            }}>
+              <span className="text-sm font-medium text-slate-700 dark:text-[#ff4500]400">
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+            <button
+              className="btn btn-outline"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         )}
       </div>

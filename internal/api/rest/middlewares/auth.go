@@ -53,3 +53,42 @@ func AuthMiddleware(tokenizer contract.Tokenizer, usersSrv contract.UsersUseCase
 		})
 	}
 }
+
+// RequireAuthMiddleware requires authentication and returns 401 if not authenticated.
+func RequireAuthMiddleware(tokenizer contract.Tokenizer, usersSrv contract.UsersUseCase) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			// Extract the Authorization header
+			authHeader := request.Header.Get("Authorization")
+			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+				http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			// Extract the token
+			token := strings.TrimPrefix(authHeader, "Bearer ")
+
+			// Verify the token and get the user ID
+			claims, err := tokenizer.VerifyToken(token, domain.TokenTypeAccess)
+			if err != nil {
+				http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			// Get the user
+			user, err := usersSrv.GetByID(request.Context(), domain.UserID(claims.UserID))
+			if err != nil {
+				http.Error(writer, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+
+			// Set the user ID and superuser flag in the context
+			ctx := appcontext.WithUserID(request.Context(), user.ID)
+			ctx = appcontext.WithUsername(ctx, user.Username)
+			ctx = appcontext.WithIsSuper(ctx, user.IsSuperuser)
+
+			// Continue with the modified context
+			next.ServeHTTP(writer, request.WithContext(ctx))
+		})
+	}
+}

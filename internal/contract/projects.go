@@ -18,6 +18,7 @@ type ProjectsRepository interface {
 	GetByID(ctx context.Context, id domain.ProjectID) (domain.Project, error)
 	Create(ctx context.Context, project *domain.ProjectDTO) (domain.ProjectID, error)
 	List(ctx context.Context) ([]domain.Project, error)
+	ListByTenant(ctx context.Context, tenantID domain.TenantID) ([]domain.Project, error)
 	Update(ctx context.Context, id domain.ProjectID, name, description string) error
 	Archive(ctx context.Context, id domain.ProjectID) error
 }

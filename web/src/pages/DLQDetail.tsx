@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { authFetch } from '../utils/api';
 import { JsonViewer } from '../components/JsonViewer';
 
 interface DeadLetterItem {
@@ -16,7 +17,7 @@ interface DeadLetterItem {
 }
 
 export const DLQDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { tenantId, projectId, id } = useParams<{ tenantId: string; projectId: string; id: string }>();
   const [dlqItem, setDlqItem] = useState<DeadLetterItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,15 +26,15 @@ export const DLQDetail: React.FC = () => {
   const [inputError, setInputError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
+    if (tenantId && projectId && id) {
       fetchDLQItem();
     }
-  }, [id]);
+  }, [tenantId, projectId, id]);
 
   const fetchDLQItem = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/dlq/${id}`);
+      const response = await authFetch(`/api/v1/dlq/${id}?tenant_id=${tenantId}&project_id=${projectId}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch DLQ item');
@@ -139,7 +140,7 @@ export const DLQDetail: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: '1rem' }}>
-        <Link to="/dlq" className="btn btn-nav">← Back to DLQ</Link>
+        <Link to={`/tenants/${tenantId}/projects/${projectId}/dlq`} className="btn btn-nav">← Back to DLQ</Link>
       </div>
 
       <h1>DLQ Item {dlqItem.id}</h1>
@@ -152,7 +153,7 @@ export const DLQDetail: React.FC = () => {
           </div>
           <div>
             <strong>Instance ID:</strong> 
-            <Link to={`/instances/${dlqItem.instance_id}`} style={{ marginLeft: '0.5rem' }}>
+            <Link to={`/tenants/${tenantId}/projects/${projectId}/instances/${dlqItem.instance_id}`} style={{ marginLeft: '0.5rem' }}>
               {dlqItem.instance_id}
             </Link>
           </div>

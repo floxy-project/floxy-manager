@@ -22,7 +22,9 @@ import (
 	"github.com/rom8726/floxy-manager/internal/repository/projects"
 	"github.com/rom8726/floxy-manager/internal/repository/rbac"
 	"github.com/rom8726/floxy-manager/internal/repository/settings"
+	"github.com/rom8726/floxy-manager/internal/repository/tenants"
 	"github.com/rom8726/floxy-manager/internal/repository/users"
+	"github.com/rom8726/floxy-manager/internal/repository/workflows"
 	ratelimiter2fa "github.com/rom8726/floxy-manager/internal/services/2fa/ratelimiter"
 	"github.com/rom8726/floxy-manager/internal/services/email"
 	"github.com/rom8726/floxy-manager/internal/services/ldap"
@@ -144,11 +146,13 @@ func (app *App) registerComponents() {
 	// Register repositories
 	app.registerComponent(projects.New).Arg(app.PostgresPool)
 	app.registerComponent(users.New).Arg(app.PostgresPool)
+	app.registerComponent(tenants.New).Arg(app.PostgresPool)
 	app.registerComponent(ldapsyncstats.New).Arg(app.PostgresPool)
 	app.registerComponent(ldapsynclogs.New).Arg(app.PostgresPool)
 	app.registerComponent(licenses.New).Arg(app.PostgresPool)
 	app.registerComponent(productinfo.New).Arg(app.PostgresPool)
 	app.registerComponent(settings.New).Arg(app.PostgresPool)
+	app.registerComponent(workflows.New).Arg(app.PostgresPool)
 	// Register RBAC repositories
 	app.registerComponent(rbac.NewRoles).Arg(app.PostgresPool)
 	app.registerComponent(rbac.NewPermissions).Arg(app.PostgresPool)
@@ -242,7 +246,22 @@ func (app *App) newAPIServer() (*httpserver.Server, error) {
 		return nil, fmt.Errorf("resolve permissions service component: %w", err)
 	}
 
-	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv)
+	var tenantsRepo contract.TenantsRepository
+	if err := app.container.Resolve(&tenantsRepo); err != nil {
+		return nil, fmt.Errorf("resolve tenants repository component: %w", err)
+	}
+
+	var projectsRepo contract.ProjectsRepository
+	if err := app.container.Resolve(&projectsRepo); err != nil {
+		return nil, fmt.Errorf("resolve projects repository component: %w", err)
+	}
+
+	var workflowsRepo *workflows.Repository
+	if err := app.container.Resolve(&workflowsRepo); err != nil {
+		return nil, fmt.Errorf("resolve workflows repository component: %w", err)
+	}
+
+	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv, tenantsRepo, projectsRepo, workflowsRepo)
 	if err != nil {
 		return nil, fmt.Errorf("create API router: %w", err)
 	}

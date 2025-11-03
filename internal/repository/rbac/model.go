@@ -36,7 +36,7 @@ func (p *permissionModel) toDomain() domain.Permission {
 
 type membershipModel struct {
 	ID        string    `db:"id"`
-	ProjectID string    `db:"project_id"`
+	ProjectID int       `db:"project_id"`
 	UserID    int       `db:"user_id"`
 	RoleID    string    `db:"role_id"`
 	RoleKey   string    `db:"role_key"`

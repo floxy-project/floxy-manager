@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { authFetch } from '../utils/api';
 
 interface DeadLetterItem {
   id: number;
@@ -22,6 +23,7 @@ interface DLQListResponse {
 }
 
 export const DLQ: React.FC = () => {
+  const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const [dlqItems, setDlqItems] = useState<DeadLetterItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,13 +32,15 @@ export const DLQ: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
-    fetchDLQItems();
-  }, [currentPage]);
+    if (tenantId && projectId) {
+      fetchDLQItems();
+    }
+  }, [tenantId, projectId, currentPage]);
 
   const fetchDLQItems = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/dlq?page=${currentPage}&page_size=${pageSize}`);
+      const response = await authFetch(`/api/v1/dlq?tenant_id=${tenantId}&project_id=${projectId}&page=${currentPage}&page_size=${pageSize}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch DLQ items');
@@ -126,7 +130,7 @@ export const DLQ: React.FC = () => {
                       <td className="font-mono text-xs">{item.id}</td>
                       <td>
                         <Link 
-                          to={`/instances/${item.instance_id}`} 
+                          to={`/tenants/${tenantId}/projects/${projectId}/instances/${item.instance_id}`} 
                           className="btn btn-primary text-xs py-1 px-2 font-mono"
                         >
                           {item.instance_id}
@@ -158,7 +162,10 @@ export const DLQ: React.FC = () => {
                         {new Date(item.created_at).toLocaleString()}
                       </td>
                       <td>
-                        <Link to={`/dlq/${item.id}`} className="btn btn-primary text-xs py-1.5 px-3">
+                        <Link 
+                          to={`/tenants/${tenantId}/projects/${projectId}/dlq/${item.id}`} 
+                          className="btn btn-primary text-xs py-1.5 px-3"
+                        >
                           View & Requeue
                         </Link>
                       </td>

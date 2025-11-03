@@ -26,9 +26,9 @@ func New(pool *pgxpool.Pool) *Repository {
 func (r *Repository) GetByID(ctx context.Context, id domain.ProjectID) (domain.Project, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM  workflows_manager.projects WHERE id = $1 LIMIT 1`
+	const query = `SELECT id, name, description, created_at, updated_at, archived_at FROM workflows_manager.projects WHERE id = $1 LIMIT 1`
 
-	rows, err := executor.Query(ctx, query, id)
+	rows, err := executor.Query(ctx, query, id.Int())
 	if err != nil {
 		return domain.Project{}, fmt.Errorf("query project by ID: %w", err)
 	}
@@ -54,7 +54,7 @@ INSERT INTO  workflows_manager.projects (name, description, tenant_id, created_a
 VALUES ($1, $2, (SELECT id FROM  workflows_manager.tenants WHERE name = 'default'), $3, $3)
 RETURNING id`
 
-	var id string
+	var id int
 
 	err := executor.QueryRow(ctx, query,
 		project.Name,
@@ -62,7 +62,7 @@ RETURNING id`
 		time.Now(),
 	).Scan(&id)
 	if err != nil {
-		return "", fmt.Errorf("insert project: %w", err)
+		return 0, fmt.Errorf("insert project: %w", err)
 	}
 
 	return domain.ProjectID(id), nil
@@ -72,7 +72,8 @@ func (r *Repository) List(ctx context.Context) ([]domain.Project, error) {
 	executor := r.getExecutor(ctx)
 
 	const query = `
-SELECT * FROM  workflows_manager.projects p
+SELECT id, name, description, created_at, updated_at, archived_at 
+FROM workflows_manager.projects p
 WHERE p.archived_at IS NULL
 ORDER BY p.id
 `
@@ -80,6 +81,37 @@ ORDER BY p.id
 	rows, err := executor.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("query projects: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[projectModel])
+	if err != nil {
+		return nil, fmt.Errorf("collect projects: %w", err)
+	}
+
+	projects := make([]domain.Project, 0, len(listModels))
+
+	for i := range listModels {
+		model := listModels[i]
+		projects = append(projects, model.toDomain())
+	}
+
+	return projects, nil
+}
+
+func (r *Repository) ListByTenant(ctx context.Context, tenantID domain.TenantID) ([]domain.Project, error) {
+	executor := r.getExecutor(ctx)
+
+	const query = `
+SELECT id, name, description, created_at, updated_at, archived_at 
+FROM workflows_manager.projects p
+WHERE p.tenant_id = $1 AND p.archived_at IS NULL
+ORDER BY p.id
+`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int())
+	if err != nil {
+		return nil, fmt.Errorf("query projects by tenant: %w", err)
 	}
 	defer rows.Close()
 
@@ -106,7 +138,7 @@ UPDATE  workflows_manager.projects
 	SET name = $1, description = $2, updated_at = NOW()
 WHERE id = $3`
 
-	_, err := executor.Exec(ctx, query, name, description, id)
+	_, err := executor.Exec(ctx, query, name, description, id.Int())
 	if err != nil {
 		return fmt.Errorf("failed to update project: %w", err)
 	}
@@ -122,7 +154,7 @@ UPDATE  workflows_manager.projects
 	SET archived_at = NOW()
 WHERE id = $1 AND archived_at IS NULL`
 
-	result, err := executor.Exec(ctx, query, id)
+	result, err := executor.Exec(ctx, query, id.Int())
 	if err != nil {
 		return fmt.Errorf("failed to archive project: %w", err)
 	}
@@ -150,7 +182,7 @@ func (r *Repository) projectExists(ctx context.Context, id domain.ProjectID) (bo
 
 	const query = `SELECT 1 FROM  workflows_manager.projects WHERE id = $1 LIMIT 1`
 
-	rows, err := executor.Query(ctx, query, id)
+	rows, err := executor.Query(ctx, query, id.Int())
 	if err != nil {
 		return false, fmt.Errorf("query project existence: %w", err)
 	}
@@ -173,7 +205,7 @@ func (r *Repository) GetProjectIDs(ctx context.Context) ([]domain.ProjectID, err
 	var projectIDs []domain.ProjectID
 
 	for rows.Next() {
-		var id string
+		var id int
 		if err := rows.Scan(&id); err != nil {
 			return nil, fmt.Errorf("scan project ID: %w", err)
 		}

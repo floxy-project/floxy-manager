@@ -16,21 +16,28 @@ import (
 
 	"github.com/rom8726/floxy-manager/internal/api/rest/handlers"
 	"github.com/rom8726/floxy-manager/internal/contract"
+	"github.com/rom8726/floxy-manager/internal/repository/workflows"
 )
 
 type Router struct {
-	router          *httprouter.Router
-	floxyMux        http.Handler
-	staticMux       http.Handler
-	authHandler     *handlers.AuthHandler
-	passwordHandler *handlers.PasswordHandler
-	twoFAHandler    *handlers.TwoFAHandler
-	ssoHandler      *handlers.SSOHandler
+	router           *httprouter.Router
+	floxyMux         http.Handler
+	staticMux        http.Handler
+	authHandler      *handlers.AuthHandler
+	passwordHandler  *handlers.PasswordHandler
+	twoFAHandler     *handlers.TwoFAHandler
+	ssoHandler       *handlers.SSOHandler
+	tenantsHandler   *handlers.TenantsHandler
+	projectsHandler  *handlers.ProjectsHandler
+	workflowsHandler *handlers.WorkflowsHandler
 }
 
 func NewRouter(
 	pool *pgxpool.Pool,
 	usersService contract.UsersUseCase,
+	tenantsRepo contract.TenantsRepository,
+	projectsRepo contract.ProjectsRepository,
+	workflowsRepo *workflows.Repository,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -61,6 +68,9 @@ func NewRouter(
 	passwordHandler := handlers.NewPasswordHandler(usersService)
 	twoFAHandler := handlers.NewTwoFAHandler(usersService)
 	ssoHandler := handlers.NewSSOHandler(usersService)
+	tenantsHandler := handlers.NewTenantsHandler(tenantsRepo)
+	projectsHandler := handlers.NewProjectsHandler(projectsRepo)
+	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo)
 
 	router.POST("/api/v1/auth/login", wrapHandler(authHandler.Login))
 	router.POST("/api/v1/auth/refresh", wrapHandler(authHandler.Refresh))
@@ -79,6 +89,22 @@ func NewRouter(
 	router.POST("/api/v1/auth/2fa/disable", wrapHandler(twoFAHandler.Disable2FA))
 	router.POST("/api/v1/auth/2fa/reset", wrapHandler(twoFAHandler.Reset2FA))
 
+	router.GET("/api/v1/tenants", wrapHandler(tenantsHandler.List))
+	router.GET("/api/v1/projects", wrapHandler(projectsHandler.List))
+
+	// Workflows endpoints
+	router.GET("/api/v1/workflows", wrapHandler(workflowsHandler.ListWorkflows))
+	router.GET("/api/v1/workflows/:id", wrapHandler(workflowsHandler.GetWorkflow))
+	router.GET("/api/v1/workflows/:id/instances", wrapHandler(workflowsHandler.ListWorkflowInstances))
+	router.GET("/api/v1/instances", wrapHandler(workflowsHandler.ListInstances))
+	router.GET("/api/v1/instances/:id", wrapHandler(workflowsHandler.GetInstance))
+	router.GET("/api/v1/active-workflows", wrapHandler(workflowsHandler.ListActiveWorkflows))
+	router.GET("/api/v1/instances/:id/steps", wrapHandler(workflowsHandler.ListInstanceSteps))
+	router.GET("/api/v1/instances/:id/events", wrapHandler(workflowsHandler.ListInstanceEvents))
+	router.GET("/api/v1/stats", wrapHandler(workflowsHandler.ListStats))
+	router.GET("/api/v1/dlq", wrapHandler(workflowsHandler.ListDLQ))
+	router.GET("/api/v1/dlq/:id", wrapHandler(workflowsHandler.GetDLQItem))
+
 	floxyMux := floxyServer.Mux()
 
 	staticMux := http.NewServeMux()
@@ -88,13 +114,16 @@ func NewRouter(
 	staticMux.Handle("/bundle.js.LICENSE.txt", staticFS)
 
 	return &Router{
-		router:          router,
-		floxyMux:        floxyMux,
-		staticMux:       staticMux,
-		authHandler:     authHandler,
-		passwordHandler: passwordHandler,
-		twoFAHandler:    twoFAHandler,
-		ssoHandler:      ssoHandler,
+		router:           router,
+		floxyMux:         floxyMux,
+		staticMux:        staticMux,
+		authHandler:      authHandler,
+		passwordHandler:  passwordHandler,
+		twoFAHandler:     twoFAHandler,
+		ssoHandler:       ssoHandler,
+		tenantsHandler:   tenantsHandler,
+		projectsHandler:  projectsHandler,
+		workflowsHandler: workflowsHandler,
 	}, nil
 }
 

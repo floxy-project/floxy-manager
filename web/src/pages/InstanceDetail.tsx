@@ -1,9 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { authFetch } from '../utils/api';
+
 import { WorkflowGraph } from '../components/WorkflowGraph';
 import { DecisionModal } from '../components/DecisionModal';
 import { InstanceActionModal } from '../components/InstanceActionModal';
 import { JsonViewer } from '../components/JsonViewer';
+
+interface InstancesResponse {
+  items: any[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+interface StepsResponse {
+  items: any[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
+interface EventsResponse {
+  items: any[];
+  page: number;
+  page_size: number;
+  total: number;
+}
 
 interface WorkflowInstance {
   id: number;
@@ -53,7 +76,7 @@ interface WorkflowDefinition {
 }
 
 export const InstanceDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { tenantId, projectId, id } = useParams<{ tenantId: string; projectId: string; id: string }>();
   const [instance, setInstance] = useState<WorkflowInstance | null>(null);
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
   const [events, setEvents] = useState<WorkflowEvent[]>([]);
@@ -66,48 +89,48 @@ export const InstanceDetail: React.FC = () => {
   const [actionType, setActionType] = useState<'cancel' | 'abort'>('cancel');
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [instanceRes, stepsRes, eventsRes] = await Promise.all([
-          fetch(`/api/instances/${id}`),
-          fetch(`/api/instances/${id}/steps`),
-          fetch(`/api/instances/${id}/events`)
-        ]);
-
-        if (!instanceRes.ok) {
-          throw new Error('Failed to fetch instance');
-        }
-
-        const instanceData = await instanceRes.json();
-        setInstance(instanceData);
-
-        if (stepsRes.ok) {
-          const stepsData = await stepsRes.json();
-          setSteps(stepsData);
-        }
-
-        if (eventsRes.ok) {
-          const eventsData = await eventsRes.json();
-          setEvents(eventsData);
-        }
-
-        // Fetch workflow definition
-        const workflowRes = await fetch(`/api/workflows/${instanceData.workflow_id}`);
-        if (workflowRes.ok) {
-          const workflowData = await workflowRes.json();
-          setWorkflowDefinition(workflowData);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (id) {
+    if (tenantId && projectId && id) {
       fetchData();
     }
-  }, [id]);
+  }, [tenantId, projectId, id]);
+
+  const fetchData = async () => {
+    try {
+      const [instanceRes, stepsRes, eventsRes] = await Promise.all([
+        authFetch(`/api/v1/instances/${id}?tenant_id=${tenantId}&project_id=${projectId}`),
+        authFetch(`/api/v1/instances/${id}/steps?tenant_id=${tenantId}&project_id=${projectId}`),
+        authFetch(`/api/v1/instances/${id}/events?tenant_id=${tenantId}&project_id=${projectId}`)
+      ]);
+
+      if (!instanceRes.ok) {
+        throw new Error('Failed to fetch instance');
+      }
+
+      const instanceData = await instanceRes.json();
+      setInstance(instanceData);
+
+      if (stepsRes.ok) {
+        const stepsData: StepsResponse = await stepsRes.json();
+        setSteps(stepsData.items || stepsData);
+      }
+
+      if (eventsRes.ok) {
+        const eventsData: EventsResponse = await eventsRes.json();
+        setEvents(eventsData.items || eventsData);
+      }
+
+      // Fetch workflow definition
+      const workflowRes = await authFetch(`/api/v1/workflows/${instanceData.workflow_id}?tenant_id=${tenantId}&project_id=${projectId}`);
+      if (workflowRes.ok) {
+        const workflowData = await workflowRes.json();
+        setWorkflowDefinition(workflowData);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to determine if decision buttons are needed
   const needsDecision = () => {

@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	dbSchema        = "workflows_manager"
-	migrationsTable = "schema_migrations_manager"
+	dbSchema = "workflows_manager"
 )
 
 func upMigrations(connStr, migrationsDir string) error {
@@ -28,7 +27,6 @@ func upMigrations(connStr, migrationsDir string) error {
 
 	values := connStringURL.Query()
 	values.Set("search_path", dbSchema) // set db schema
-	//values.Set("x-migrations-table", migrationsTable) // set migrations table
 	connStringURL.RawQuery = values.Encode()
 	connStr = connStringURL.String()
 

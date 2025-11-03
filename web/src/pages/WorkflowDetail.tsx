@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { authFetch } from '../utils/api';
 import { WorkflowGraph } from '../components/WorkflowGraph';
 import { JsonViewer } from '../components/JsonViewer';
 
@@ -25,42 +26,42 @@ interface WorkflowInstance {
 }
 
 export const WorkflowDetail: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { tenantId, projectId, id } = useParams<{ tenantId: string; projectId: string; id: string }>();
     const [workflow, setWorkflow] = useState<WorkflowDefinition | null>(null);
     const [instances, setInstances] = useState<WorkflowInstance[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [workflowRes, instancesRes] = await Promise.all([
-                    fetch(`/api/workflows/${id}`),
-                    fetch(`/api/workflows/${id}/instances`)
-                ]);
-
-                if (!workflowRes.ok) {
-                    throw new Error('Failed to fetch workflow');
-                }
-
-                const workflowData = await workflowRes.json();
-                setWorkflow(workflowData);
-
-                if (instancesRes.ok) {
-                    const instancesData = await instancesRes.json();
-                    setInstances(instancesData);
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unknown error');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (id) {
+        if (tenantId && projectId && id) {
             fetchData();
         }
-    }, [id]);
+    }, [tenantId, projectId, id]);
+
+    const fetchData = async () => {
+        try {
+            const [workflowRes, instancesRes] = await Promise.all([
+                authFetch(`/api/v1/workflows/${id}?tenant_id=${tenantId}&project_id=${projectId}`),
+                authFetch(`/api/v1/workflows/${id}/instances?tenant_id=${tenantId}&project_id=${projectId}`)
+            ]);
+
+            if (!workflowRes.ok) {
+                throw new Error('Failed to fetch workflow');
+            }
+
+            const workflowData = await workflowRes.json();
+            setWorkflow(workflowData);
+
+            if (instancesRes.ok) {
+                const instancesData: InstancesResponse = await instancesRes.json();
+                setInstances(instancesData.items || instancesData);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     if (loading) {
         return <div className="loading">Loading workflow details...</div>;
@@ -77,7 +78,7 @@ export const WorkflowDetail: React.FC = () => {
     return (
         <div>
             <div style={{ marginBottom: '1rem' }}>
-                <Link to="/workflows" className="btn btn-nav">← Back to Workflows</Link>
+                <Link to={`/tenants/${tenantId}/projects/${projectId}/workflows`} className="btn btn-nav">← Back to Workflows</Link>
             </div>
 
             <h1>{workflow.name} v{workflow.version}</h1>
@@ -125,7 +126,10 @@ export const WorkflowDetail: React.FC = () => {
                                 <td>{instance.started_at ? new Date(instance.started_at).toLocaleString() : '-'}</td>
                                 <td>{instance.completed_at ? new Date(instance.completed_at).toLocaleString() : '-'}</td>
                                 <td>
-                                    <Link to={`/instances/${instance.id}`} className="btn btn-primary">
+                                    <Link 
+                                        to={`/tenants/${tenantId}/projects/${projectId}/instances/${instance.id}`} 
+                                        className="btn btn-primary"
+                                    >
                                         View Details
                                     </Link>
                                 </td>

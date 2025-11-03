@@ -1,0 +1,448 @@
+package workflows
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/rom8726/floxy-manager/internal/domain"
+	"github.com/rom8726/floxy-manager/pkg/db"
+)
+
+type Repository struct {
+	db db.Tx
+}
+
+func New(pool *pgxpool.Pool) *Repository {
+	return &Repository{
+		db: pool,
+	}
+}
+
+// ListWorkflowDefinitions returns workflow definitions filtered by tenant_id and project_id
+func (r *Repository) ListWorkflowDefinitions(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.WorkflowDefinition, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total
+	countQuery := `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_definitions 
+WHERE tenant_id = $1 AND project_id = $2`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery, tenantID.Int(), projectID.Int()).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count workflow definitions: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_definitions 
+WHERE tenant_id = $1 AND project_id = $2
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query workflow definitions: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[workflowDefinitionModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect workflow definitions: %w", err)
+	}
+
+	definitions := make([]domain.WorkflowDefinition, 0, len(listModels))
+	for i := range listModels {
+		definitions = append(definitions, listModels[i].toDomain())
+	}
+
+	return definitions, total, nil
+}
+
+// GetWorkflowDefinition returns a workflow definition by ID
+func (r *Repository) GetWorkflowDefinition(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, id string) (domain.WorkflowDefinition, error) {
+	executor := r.getExecutor(ctx)
+
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_definitions 
+WHERE tenant_id = $1 AND project_id = $2 AND id = $3
+LIMIT 1`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), id)
+	if err != nil {
+		return domain.WorkflowDefinition{}, fmt.Errorf("query workflow definition: %w", err)
+	}
+	defer rows.Close()
+
+	model, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[workflowDefinitionModel])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.WorkflowDefinition{}, domain.ErrEntityNotFound
+		}
+		return domain.WorkflowDefinition{}, fmt.Errorf("collect workflow definition: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+// ListWorkflowInstances returns workflow instances filtered by tenant_id and project_id
+func (r *Repository) ListWorkflowInstances(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, workflowID string, page, pageSize int) ([]domain.WorkflowInstance, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	var countQuery string
+	var query string
+	var countArgs []interface{}
+	var args []interface{}
+
+	if workflowID != "" {
+		countQuery = `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_instances 
+WHERE tenant_id = $1 AND project_id = $2 AND workflow_id = $3`
+		countArgs = []interface{}{tenantID.Int(), projectID.Int(), workflowID}
+
+		query = `
+SELECT * FROM workflows_manager.v_workflow_instances 
+WHERE tenant_id = $1 AND project_id = $2 AND workflow_id = $3
+ORDER BY created_at DESC
+LIMIT $4 OFFSET $5`
+		args = []interface{}{tenantID.Int(), projectID.Int(), workflowID, pageSize, offset}
+	} else {
+		countQuery = `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_instances 
+WHERE tenant_id = $1 AND project_id = $2`
+		countArgs = []interface{}{tenantID.Int(), projectID.Int()}
+
+		query = `
+SELECT * FROM workflows_manager.v_workflow_instances 
+WHERE tenant_id = $1 AND project_id = $2
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4`
+		args = []interface{}{tenantID.Int(), projectID.Int(), pageSize, offset}
+	}
+
+	// Count total
+	var total int
+	err := executor.QueryRow(ctx, countQuery, countArgs...).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count workflow instances: %w", err)
+	}
+
+	// Fetch items
+	rows, err := executor.Query(ctx, query, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query workflow instances: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[workflowInstanceModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect workflow instances: %w", err)
+	}
+
+	instances := make([]domain.WorkflowInstance, 0, len(listModels))
+	for i := range listModels {
+		instances = append(instances, listModels[i].toDomain())
+	}
+
+	return instances, total, nil
+}
+
+// GetWorkflowInstance returns a workflow instance by ID
+func (r *Repository) GetWorkflowInstance(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, id int) (domain.WorkflowInstance, error) {
+	executor := r.getExecutor(ctx)
+
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_instances 
+WHERE tenant_id = $1 AND project_id = $2 AND id = $3
+LIMIT 1`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), id)
+	if err != nil {
+		return domain.WorkflowInstance{}, fmt.Errorf("query workflow instance: %w", err)
+	}
+	defer rows.Close()
+
+	model, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[workflowInstanceModel])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.WorkflowInstance{}, domain.ErrEntityNotFound
+		}
+		return domain.WorkflowInstance{}, fmt.Errorf("collect workflow instance: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+// ListWorkflowSteps returns workflow steps for an instance
+func (r *Repository) ListWorkflowSteps(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, instanceID int, page, pageSize int) ([]domain.WorkflowStep, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total
+	countQuery := `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_steps 
+WHERE tenant_id = $1 AND project_id = $2 AND instance_id = $3`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery, tenantID.Int(), projectID.Int(), instanceID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count workflow steps: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_steps 
+WHERE tenant_id = $1 AND project_id = $2 AND instance_id = $3
+ORDER BY created_at ASC
+LIMIT $4 OFFSET $5`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), instanceID, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query workflow steps: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[workflowStepModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect workflow steps: %w", err)
+	}
+
+	steps := make([]domain.WorkflowStep, 0, len(listModels))
+	for i := range listModels {
+		steps = append(steps, listModels[i].toDomain())
+	}
+
+	return steps, total, nil
+}
+
+// ListWorkflowEvents returns workflow events for an instance
+func (r *Repository) ListWorkflowEvents(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, instanceID int, page, pageSize int) ([]domain.WorkflowEvent, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total
+	countQuery := `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_events 
+WHERE tenant_id = $1 AND project_id = $2 AND instance_id = $3`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery, tenantID.Int(), projectID.Int(), instanceID).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count workflow events: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_events 
+WHERE tenant_id = $1 AND project_id = $2 AND instance_id = $3
+ORDER BY created_at DESC
+LIMIT $4 OFFSET $5`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), instanceID, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query workflow events: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[workflowEventModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect workflow events: %w", err)
+	}
+
+	events := make([]domain.WorkflowEvent, 0, len(listModels))
+	for i := range listModels {
+		events = append(events, listModels[i].toDomain())
+	}
+
+	return events, total, nil
+}
+
+// ListActiveWorkflows returns active workflows
+func (r *Repository) ListActiveWorkflows(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.ActiveWorkflow, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total
+	countQuery := `
+SELECT COUNT(*) FROM workflows_manager.v_active_workflows 
+WHERE tenant_id = $1 AND project_id = $2`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery, tenantID.Int(), projectID.Int()).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count active workflows: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT 
+    vaw.tenant_id,
+    vaw.project_id,
+    vaw.id,
+    vaw.workflow_id,
+    wd.name as workflow_name,
+    vaw.status,
+    vaw.created_at,
+    vaw.updated_at,
+    vaw.duration_seconds,
+    vaw.total_steps,
+    vaw.completed_steps,
+    vaw.failed_steps,
+    vaw.running_steps
+FROM workflows_manager.v_active_workflows vaw
+JOIN workflows.workflow_definitions wd ON wd.id = vaw.workflow_id
+WHERE vaw.tenant_id = $1 AND vaw.project_id = $2
+ORDER BY vaw.created_at DESC
+LIMIT $3 OFFSET $4`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query active workflows: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[activeWorkflowModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect active workflows: %w", err)
+	}
+
+	workflows := make([]domain.ActiveWorkflow, 0, len(listModels))
+	for i := range listModels {
+		workflows = append(workflows, listModels[i].toDomain())
+	}
+
+	return workflows, total, nil
+}
+
+// ListWorkflowStats returns workflow statistics
+func (r *Repository) ListWorkflowStats(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.WorkflowStat, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total
+	countQuery := `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_stats 
+WHERE tenant_id = $1 AND project_id = $2`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery, tenantID.Int(), projectID.Int()).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count workflow stats: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT tenant_id, project_id, name, version, total_instances, completed, failed, running, avg_duration_seconds
+FROM workflows_manager.v_workflow_stats 
+WHERE tenant_id = $1 AND project_id = $2
+ORDER BY name, version
+LIMIT $3 OFFSET $4`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query workflow stats: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[workflowStatModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect workflow stats: %w", err)
+	}
+
+	stats := make([]domain.WorkflowStat, 0, len(listModels))
+	for i := range listModels {
+		stats = append(stats, listModels[i].toDomain())
+	}
+
+	return stats, total, nil
+}
+
+// ListDLQItems returns DLQ items with pagination
+func (r *Repository) ListDLQItems(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.DLQItem, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total
+	countQuery := `
+SELECT COUNT(*) FROM workflows_manager.v_workflow_dlq 
+WHERE tenant_id = $1 AND project_id = $2`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery, tenantID.Int(), projectID.Int()).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count DLQ items: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_dlq 
+WHERE tenant_id = $1 AND project_id = $2
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $4`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query DLQ items: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[dlqItemModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect DLQ items: %w", err)
+	}
+
+	items := make([]domain.DLQItem, 0, len(listModels))
+	for i := range listModels {
+		items = append(items, listModels[i].toDomain())
+	}
+
+	return items, total, nil
+}
+
+// GetDLQItem returns a DLQ item by ID
+func (r *Repository) GetDLQItem(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, id int) (domain.DLQItem, error) {
+	executor := r.getExecutor(ctx)
+
+	const query = `
+SELECT * FROM workflows_manager.v_workflow_dlq 
+WHERE tenant_id = $1 AND project_id = $2 AND id = $3
+LIMIT 1`
+
+	rows, err := executor.Query(ctx, query, tenantID.Int(), projectID.Int(), id)
+	if err != nil {
+		return domain.DLQItem{}, fmt.Errorf("query DLQ item: %w", err)
+	}
+	defer rows.Close()
+
+	model, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[dlqItemModel])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.DLQItem{}, domain.ErrEntityNotFound
+		}
+		return domain.DLQItem{}, fmt.Errorf("collect DLQ item: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+//nolint:ireturn // it's ok here
+func (r *Repository) getExecutor(ctx context.Context) db.Tx {
+	if tx := db.TxFromContext(ctx); tx != nil {
+		return tx
+	}
+
+	return r.db
+}

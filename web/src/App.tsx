@@ -1,6 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from './components/Layout';
+import { AuthorizedLayout } from './components/AuthorizedLayout';
+import { TenantProjectLayout } from './components/TenantProjectLayout';
+import { Tenants } from './pages/Tenants';
+import { Projects } from './pages/Projects';
 import { Dashboard } from './pages/Dashboard';
 import { Workflows } from './pages/Workflows';
 import { WorkflowDetail } from './pages/WorkflowDetail';
@@ -42,20 +45,40 @@ function App() {
           <Login />
         </PublicRoute>
       } />
-      <Route path="/*" element={
+      <Route path="/tenants" element={
         <ProtectedRoute>
-          <Layout>
+          <AuthorizedLayout>
+            <Tenants />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/tenants/:tenantId/projects" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Projects />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/tenants/:tenantId/projects/:projectId/*" element={
+        <ProtectedRoute>
+          <TenantProjectLayout>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/workflows" element={<Workflows />} />
-              <Route path="/workflows/:id" element={<WorkflowDetail />} />
-              <Route path="/instances" element={<Instances />} />
-              <Route path="/instances/:id" element={<InstanceDetail />} />
-              <Route path="/stats" element={<Stats />} />
-              <Route path="/dlq" element={<DLQ />} />
-              <Route path="/dlq/:id" element={<DLQDetail />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="workflows" element={<Workflows />} />
+              <Route path="workflows/:id" element={<WorkflowDetail />} />
+              <Route path="instances" element={<Instances />} />
+              <Route path="instances/:id" element={<InstanceDetail />} />
+              <Route path="stats" element={<Stats />} />
+              <Route path="dlq" element={<DLQ />} />
+              <Route path="dlq/:id" element={<DLQDetail />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
-          </Layout>
+          </TenantProjectLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Navigate to="/tenants" replace />
         </ProtectedRoute>
       } />
     </Routes>

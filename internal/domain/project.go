@@ -1,10 +1,11 @@
 package domain
 
 import (
+	"strconv"
 	"time"
 )
 
-type ProjectID string
+type ProjectID int
 
 type Project struct {
 	ID          ProjectID
@@ -21,5 +22,9 @@ type ProjectDTO struct {
 }
 
 func (id ProjectID) String() string {
-	return string(id)
+	return strconv.Itoa(int(id))
+}
+
+func (id ProjectID) Int() int {
+	return int(id)
 }

@@ -16,7 +16,7 @@ func TestWithProjectID(t *testing.T) {
 	ctx := context.Background()
 
 	// Add a project ID to the context
-	projectID := domain.ProjectID("123")
+	projectID := domain.ProjectID(123)
 	ctxWithProjectID := WithProjectID(ctx, projectID)
 
 	// Verify the context is not the same as the original
@@ -40,7 +40,7 @@ func TestProjectID(t *testing.T) {
 		{
 			name: "Context with project ID",
 			setupCtx: func() context.Context {
-				return WithProjectID(context.Background(), "123")
+				return WithProjectID(context.Background(), domain.ProjectID(123))
 			},
 			shouldPanic: false,
 		},

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { CleanupModal } from '../components/CleanupModal';
+import { authFetch } from '../utils/api';
 
 interface SummaryStats {
   total_workflows: number;
@@ -12,7 +13,7 @@ interface SummaryStats {
 }
 
 interface ActiveWorkflow {
-  id: number;
+  instance_id: number;
   workflow_id: string;
   workflow_name: string;
   status: string;
@@ -25,6 +26,7 @@ interface ActiveWorkflow {
 }
 
 export const Dashboard: React.FC = () => {
+  const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [activeWorkflows, setActiveWorkflows] = useState<ActiveWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,31 +34,53 @@ export const Dashboard: React.FC = () => {
   const [showCleanupModal, setShowCleanupModal] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [summaryRes, activeRes] = await Promise.all([
-          fetch('/api/stats/summary'),
-          fetch('/api/instances/active')
-        ]);
+    if (tenantId && projectId) {
+      fetchData();
+    }
+  }, [tenantId, projectId]);
+
+  const fetchData = async () => {
+    try {
+      const [summaryRes, activeRes] = await Promise.all([
+        authFetch(`/api/v1/stats?tenant_id=${tenantId}&project_id=${projectId}`),
+        authFetch(`/api/v1/active-workflows?tenant_id=${tenantId}&project_id=${projectId}`)
+      ]);
 
         if (!summaryRes.ok || !activeRes.ok) {
           throw new Error('Failed to fetch data');
         }
 
-        const summaryData = await summaryRes.json();
-        const activeData = await activeRes.json();
+        const summaryDataRaw = await summaryRes.json();
+        const activeDataRaw = await activeRes.json();
 
-        setSummary(summaryData);
-        setActiveWorkflows(activeData && Array.isArray(activeData) ? activeData : []);
+        const summaryData = Array.isArray(summaryDataRaw) ? summaryDataRaw : (summaryDataRaw.items || []);
+        const activeData = Array.isArray(activeDataRaw) ? activeDataRaw : (activeDataRaw.items || []);
+
+        const stats = Array.isArray(summaryData) ? summaryData : [];
+        const totalWorkflows = stats.length;
+        const totalInstances = stats.reduce((sum, stat) => sum + (stat.total_instances || 0), 0);
+        const totalCompleted = stats.reduce((sum, stat) => sum + (stat.completed_instances || 0), 0);
+        const totalFailed = stats.reduce((sum, stat) => sum + (stat.failed_instances || 0), 0);
+        const totalRunning = stats.reduce((sum, stat) => sum + (stat.running_instances || 0), 0);
+        const activeWorkflowsList = Array.isArray(activeData) ? activeData : [];
+        const activeWorkflowsCount = activeWorkflowsList.length;
+        
+        setSummary({
+          total_workflows: totalWorkflows,
+          completed_workflows: totalCompleted,
+          failed_workflows: totalFailed,
+          running_workflows: totalRunning,
+          pending_workflows: 0,
+          active_workflows: activeWorkflowsCount,
+        });
+
+        setActiveWorkflows(activeWorkflowsList);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, []);
 
   const handleCleanup = (daysToKeep: number) => {
     window.location.reload();
@@ -178,8 +202,8 @@ export const Dashboard: React.FC = () => {
                 {activeWorkflows.map((workflow) => {
                   const progress = getProgressPercentage(workflow.completed_steps, workflow.total_steps);
                   return (
-                    <tr key={workflow.id}>
-                      <td className="font-mono text-xs">{workflow.id}</td>
+                    <tr key={workflow.instance_id}>
+                      <td className="font-mono text-xs">{workflow.instance_id}</td>
                       <td>
                         <div className="font-medium">{workflow.workflow_name || workflow.workflow_id}</div>
                         <div className="text-xs text-slate-500 dark:text-[#ff4500]500 font-mono mt-0.5">
@@ -211,7 +235,7 @@ export const Dashboard: React.FC = () => {
                         <span className="text-slate-600 dark:text-[#ff4500]500">{workflow.total_steps}</span>
                       </td>
                       <td>
-                        <Link to={`/instances/${workflow.id}`} className="btn btn-primary text-xs py-1.5 px-3">
+                        <Link to={`/tenants/${tenantId}/projects/${projectId}/instances/${workflow.instance_id}`} className="btn btn-primary text-xs py-1.5 px-3">
                           View
                         </Link>
                       </td>

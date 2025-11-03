@@ -8,7 +8,7 @@ import (
 )
 
 type projectModel struct {
-	ID          string         `db:"id"`
+	ID          int            `db:"id"`
 	Name        string         `db:"name"`
 	Description sql.NullString `db:"description"`
 	CreatedAt   time.Time      `db:"created_at"`

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { authFetch } from '../utils/api';
 
 interface WorkflowDefinition {
   id: string;
@@ -9,29 +10,46 @@ interface WorkflowDefinition {
   created_at: string;
 }
 
+interface WorkflowsResponse {
+  items: WorkflowDefinition[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
 export const Workflows: React.FC = () => {
+  const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
-    const fetchWorkflows = async () => {
-      try {
-        const response = await fetch('/api/workflows');
-        if (!response.ok) {
-          throw new Error('Failed to fetch workflows');
-        }
-        const data = await response.json();
-        setWorkflows(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (tenantId && projectId) {
+      fetchWorkflows();
+    }
+  }, [tenantId, projectId, currentPage]);
 
-    fetchWorkflows();
-  }, []);
+  const fetchWorkflows = async () => {
+    try {
+      setLoading(true);
+      const response = await authFetch(`/api/v1/workflows?tenant_id=${tenantId}&project_id=${projectId}&page=${currentPage}&page_size=${pageSize}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch workflows');
+      }
+      const data: WorkflowsResponse = await response.json();
+      setWorkflows(data.items);
+      setTotalItems(data.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   if (loading) {
     return (
@@ -70,43 +88,85 @@ export const Workflows: React.FC = () => {
             <p>No workflow definitions found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Version</th>
-                  <th>Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {workflows.map((workflow) => (
-                  <tr key={workflow.id}>
-                    <td>
-                      <div className="font-medium">{workflow.name}</div>
-                      <div className="text-xs text-slate-500 dark:text-[#ff4500]500 font-mono mt-0.5">
-                        {workflow.id}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-[#3e3e42] text-slate-700 dark:text-[#ff4500]400">
-                        v{workflow.version}
-                      </span>
-                    </td>
-                    <td className="text-sm text-slate-600 dark:text-[#ff4500]500">
-                      {new Date(workflow.created_at).toLocaleString()}
-                    </td>
-                    <td>
-                      <Link to={`/workflows/${workflow.id}`} className="btn btn-primary text-xs py-1.5 px-3">
-                        View Details
-                      </Link>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Version</th>
+                    <th>Created</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {workflows.map((workflow) => (
+                    <tr key={workflow.id}>
+                      <td>
+                        <div className="font-medium">{workflow.name}</div>
+                        <div className="text-xs text-slate-500 dark:text-[#ff4500]500 font-mono mt-0.5">
+                          {workflow.id}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-[#3e3e42] text-slate-700 dark:text-[#ff4500]400">
+                          v{workflow.version}
+                        </span>
+                      </td>
+                      <td className="text-sm text-slate-600 dark:text-[#ff4500]500">
+                        {new Date(workflow.created_at).toLocaleString()}
+                      </td>
+                      <td>
+                        <Link 
+                          to={`/tenants/${tenantId}/projects/${projectId}/workflows/${workflow.id}`} 
+                          className="btn btn-primary text-xs py-1.5 px-3"
+                        >
+                          View Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Previous
+                </button>
+                <div className="px-4 py-2 rounded-lg" style={{
+                  background: 'rgba(255, 255, 255, 0.5)',
+                  backdropFilter: 'blur(12px) saturate(150%)',
+                  WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)'
+                }}>
+                  <span className="text-sm font-medium text-slate-700 dark:text-[#ff4500]400">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
