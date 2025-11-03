@@ -40,7 +40,7 @@ func Write(
 	}
 
 	const query = `
-		insert into membership_audit (membership_id, actor_user_id, action, old_value, new_value)
+		insert into workflows_manager.membership_audit (membership_id, actor_user_id, action, old_value, new_value)
 		values ($1, $2, $3, $4, $5)
 	`
 

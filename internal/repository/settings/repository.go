@@ -31,7 +31,7 @@ func (r *Repository) GetByName(ctx context.Context, name string) (*domain.Settin
 
 	const query = `
 		SELECT id, name, value, description, created_at, updated_at
-		FROM workflows.settings
+		FROM  workflows_manager.settings
 		WHERE name = $1
 		LIMIT 1
 	`
@@ -64,7 +64,7 @@ func (r *Repository) SetByName(ctx context.Context, name string, value interface
 	}
 
 	const query = `
-		INSERT INTO workflows.settings (name, value, description)
+		INSERT INTO  workflows_manager.settings (name, value, description)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (name) 
 		DO UPDATE SET 
@@ -85,7 +85,7 @@ func (r *Repository) SetByName(ctx context.Context, name string, value interface
 func (r *Repository) DeleteByName(ctx context.Context, name string) error {
 	executor := r.getExecutor(ctx)
 
-	const query = `DELETE FROM workflows.settings WHERE name = $1`
+	const query = `DELETE FROM  workflows_manager.settings WHERE name = $1`
 
 	tag, err := executor.Exec(ctx, query, name)
 	if err != nil {
@@ -105,7 +105,7 @@ func (r *Repository) List(ctx context.Context) ([]*domain.Setting, error) {
 
 	const query = `
 		SELECT id, name, value, description, created_at, updated_at
-		FROM workflows.settings
+		FROM  workflows_manager.settings
 		ORDER BY name
 	`
 

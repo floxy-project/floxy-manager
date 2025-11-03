@@ -27,7 +27,7 @@ func (r *Repository) Create(ctx context.Context, stats domain.LDAPSyncStats) (do
 	executor := r.getExecutor(ctx)
 
 	const query = `
-INSERT INTO workflows.ldap_sync_stats (sync_session_id, start_time, end_time, duration, total_users,
+INSERT INTO  workflows_manager.ldap_sync_stats (sync_session_id, start_time, end_time, duration, total_users,
                              synced_users, errors, warnings, status, error_message)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING id, sync_session_id, start_time, end_time, duration, total_users, 
@@ -69,7 +69,7 @@ RETURNING id, sync_session_id, start_time, end_time, duration, total_users,
 func (r *Repository) GetBySyncSessionID(ctx context.Context, syncSessionID string) (domain.LDAPSyncStats, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.ldap_sync_stats WHERE sync_session_id = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.ldap_sync_stats WHERE sync_session_id = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, syncSessionID)
 	if err != nil {
@@ -93,7 +93,7 @@ func (r *Repository) Update(ctx context.Context, stats domain.LDAPSyncStats) err
 	executor := r.getExecutor(ctx)
 
 	const query = `
-UPDATE workflows.ldap_sync_stats
+UPDATE  workflows_manager.ldap_sync_stats
 SET start_time = $1, end_time = $2, duration = $3, total_users = $4,
     synced_users = $5, errors = $6, warnings = $7, status = $8, error_message = $9
 WHERE sync_session_id = $10`
@@ -132,7 +132,7 @@ func (r *Repository) List(ctx context.Context, limit int) ([]domain.LDAPSyncStat
 		limit = 1000
 	}
 
-	const query = `SELECT * FROM workflows.ldap_sync_stats ORDER BY start_time DESC LIMIT $1`
+	const query = `SELECT * FROM  workflows_manager.ldap_sync_stats ORDER BY start_time DESC LIMIT $1`
 
 	rows, err := executor.Query(ctx, query, limit)
 	if err != nil {
@@ -165,7 +165,7 @@ func (r *Repository) ListCompleted(ctx context.Context, limit int) ([]domain.LDA
 		limit = 1000
 	}
 
-	const query = `SELECT * FROM workflows.ldap_sync_stats WHERE status = 'completed' ORDER BY start_time DESC LIMIT $1`
+	const query = `SELECT * FROM  workflows_manager.ldap_sync_stats WHERE status = 'completed' ORDER BY start_time DESC LIMIT $1`
 
 	rows, err := executor.Query(ctx, query, limit)
 	if err != nil {
@@ -196,7 +196,7 @@ SELECT
     COUNT(DISTINCT u.id) as local_users,
     COUNT(DISTINCT CASE WHEN u.is_active = true THEN u.id END) as active_users,
     COUNT(DISTINCT CASE WHEN u.is_active = false THEN u.id END) as inactive_users
-FROM workflows.users u`
+FROM  workflows_manager.users u`
 
 	var localUsers, activeUsers, inactiveUsers int
 
@@ -212,7 +212,7 @@ SELECT
     SUM(synced_users) as users_synced,
     SUM(errors) as errors,
     AVG(EXTRACT(EPOCH FROM (end_time - start_time))/60) as duration_minutes
-FROM workflows.ldap_sync_stats 
+FROM  workflows_manager.ldap_sync_stats 
 WHERE start_time >= $1 AND status = 'completed'
 GROUP BY DATE(start_time)
 ORDER BY date DESC
@@ -248,7 +248,7 @@ LIMIT 30`
 SELECT 
     COUNT(*) as total_syncs,
     COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_syncs
-FROM workflows.ldap_sync_stats 
+FROM  workflows_manager.ldap_sync_stats 
 WHERE start_time >= $1`
 
 	rows, err = executor.Query(ctx, successQuery, thirtyDaysAgo)
@@ -273,7 +273,7 @@ WHERE start_time >= $1`
 	// Get LDAP counts from latest successful sync
 	const ldapQuery = `
 SELECT total_users
-FROM workflows.ldap_sync_stats 
+FROM  workflows_manager.ldap_sync_stats 
 WHERE status = 'completed'
 ORDER BY start_time DESC
 LIMIT 1`

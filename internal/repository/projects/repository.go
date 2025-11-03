@@ -26,7 +26,7 @@ func New(pool *pgxpool.Pool) *Repository {
 func (r *Repository) GetByID(ctx context.Context, id domain.ProjectID) (domain.Project, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.projects WHERE id = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.projects WHERE id = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, id)
 	if err != nil {
@@ -50,8 +50,8 @@ func (r *Repository) Create(ctx context.Context, project *domain.ProjectDTO) (do
 	executor := r.getExecutor(ctx)
 
 	const query = `
-INSERT INTO workflows.projects (name, description, tenant_id, created_at, updated_at)
-VALUES ($1, $2, (SELECT id FROM workflows.tenants WHERE name = 'default'), $3, $3)
+INSERT INTO  workflows_manager.projects (name, description, tenant_id, created_at, updated_at)
+VALUES ($1, $2, (SELECT id FROM  workflows_manager.tenants WHERE name = 'default'), $3, $3)
 RETURNING id`
 
 	var id string
@@ -72,7 +72,7 @@ func (r *Repository) List(ctx context.Context) ([]domain.Project, error) {
 	executor := r.getExecutor(ctx)
 
 	const query = `
-SELECT * FROM workflows.projects p
+SELECT * FROM  workflows_manager.projects p
 WHERE p.archived_at IS NULL
 ORDER BY p.id
 `
@@ -102,7 +102,7 @@ func (r *Repository) Update(ctx context.Context, id domain.ProjectID, name, desc
 	executor := r.getExecutor(ctx)
 
 	const query = `
-UPDATE workflows.projects
+UPDATE  workflows_manager.projects
 	SET name = $1, description = $2, updated_at = NOW()
 WHERE id = $3`
 
@@ -118,7 +118,7 @@ func (r *Repository) Archive(ctx context.Context, id domain.ProjectID) error {
 	executor := r.getExecutor(ctx)
 
 	const query = `
-UPDATE workflows.projects
+UPDATE  workflows_manager.projects
 	SET archived_at = NOW()
 WHERE id = $1 AND archived_at IS NULL`
 
@@ -148,7 +148,7 @@ WHERE id = $1 AND archived_at IS NULL`
 func (r *Repository) projectExists(ctx context.Context, id domain.ProjectID) (bool, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT 1 FROM workflows.projects WHERE id = $1 LIMIT 1`
+	const query = `SELECT 1 FROM  workflows_manager.projects WHERE id = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, id)
 	if err != nil {
@@ -162,7 +162,7 @@ func (r *Repository) projectExists(ctx context.Context, id domain.ProjectID) (bo
 func (r *Repository) GetProjectIDs(ctx context.Context) ([]domain.ProjectID, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT id FROM workflows.projects WHERE archived_at IS NULL`
+	const query = `SELECT id FROM  workflows_manager.projects WHERE archived_at IS NULL`
 
 	rows, err := executor.Query(ctx, query)
 	if err != nil {
@@ -191,7 +191,7 @@ func (r *Repository) GetProjectIDs(ctx context.Context) ([]domain.ProjectID, err
 func (r *Repository) Count(ctx context.Context) (uint, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = "SELECT COUNT(*) FROM workflows.projects"
+	const query = "SELECT COUNT(*) FROM  workflows_manager.projects"
 
 	var count64 int64
 

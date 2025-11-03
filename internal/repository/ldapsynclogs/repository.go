@@ -28,7 +28,7 @@ func (r *Repository) Create(ctx context.Context, log domain.LDAPSyncLog) (domain
 	executor := r.getExecutor(ctx)
 
 	const query = `
-INSERT INTO workflows.ldap_sync_logs (timestamp, level, message, username, details, sync_session_id, stack_trace, ldap_error_code, ldap_error_message)
+INSERT INTO  workflows_manager.ldap_sync_logs (timestamp, level, message, username, details, sync_session_id, stack_trace, ldap_error_code, ldap_error_message)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id, timestamp, level, message, username, details, sync_session_id, stack_trace, ldap_error_code, ldap_error_message`
 
@@ -66,7 +66,7 @@ RETURNING id, timestamp, level, message, username, details, sync_session_id, sta
 func (r *Repository) GetByID(ctx context.Context, id uint) (domain.LDAPSyncLog, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.ldap_sync_logs WHERE id = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.ldap_sync_logs WHERE id = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, id)
 	if err != nil {
@@ -90,7 +90,7 @@ func (r *Repository) List(ctx context.Context, filter domain.LDAPSyncLogFilter) 
 	executor := r.getExecutor(ctx)
 
 	const (
-		tableName    = "workflows.ldap_sync_logs"
+		tableName    = " workflows_manager.ldap_sync_logs"
 		defaultLimit = 100
 	)
 
@@ -179,7 +179,7 @@ func (r *Repository) List(ctx context.Context, filter domain.LDAPSyncLogFilter) 
 func (r *Repository) DeleteBySyncID(ctx context.Context, syncSessionID string) error {
 	executor := r.getExecutor(ctx)
 
-	const query = `DELETE FROM workflows.ldap_sync_logs WHERE sync_session_id = $1`
+	const query = `DELETE FROM  workflows_manager.ldap_sync_logs WHERE sync_session_id = $1`
 
 	_, err := executor.Exec(ctx, query, syncSessionID)
 	if err != nil {

@@ -28,7 +28,7 @@ func (r *Repository) Create(ctx context.Context, license domain.License) (domain
 	model := fromDomain(license)
 
 	const query = `
-INSERT INTO workflows.license (id, license_text, issued_at, expires_at, client_id, type, created_at)
+INSERT INTO  workflows_manager.license (id, license_text, issued_at, expires_at, client_id, type, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *`
 
@@ -57,7 +57,7 @@ RETURNING *`
 func (r *Repository) GetByID(ctx context.Context, id string) (domain.License, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.license WHERE id = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.license WHERE id = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, id)
 	if err != nil {
@@ -80,7 +80,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (domain.License, er
 func (r *Repository) GetLastByExpiresAt(ctx context.Context) (domain.License, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.license ORDER BY expires_at DESC LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.license ORDER BY expires_at DESC LIMIT 1`
 
 	rows, err := executor.Query(ctx, query)
 	if err != nil {
@@ -103,7 +103,7 @@ func (r *Repository) GetLastByExpiresAt(ctx context.Context) (domain.License, er
 func (r *Repository) Delete(ctx context.Context, id string) error {
 	executor := r.getExecutor(ctx)
 
-	const query = `DELETE FROM workflows.license WHERE id = $1`
+	const query = `DELETE FROM  workflows_manager.license WHERE id = $1`
 
 	tag, err := executor.Exec(ctx, query, id)
 	if err != nil {
@@ -120,7 +120,7 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 func (r *Repository) List(ctx context.Context) ([]domain.License, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.license ORDER BY created_at DESC`
+	const query = `SELECT * FROM  workflows_manager.license ORDER BY created_at DESC`
 
 	rows, err := executor.Query(ctx, query)
 	if err != nil {
@@ -161,7 +161,7 @@ func (r *Repository) UpdateLicense(ctx context.Context, license domain.License) 
 	model := fromDomain(license)
 
 	const query = `
-UPDATE workflows.license 
+UPDATE  workflows_manager.license 
 SET license_text = $1, issued_at = $2, expires_at = $3, client_id = $4, type = $5
 WHERE id = $6
 RETURNING *`

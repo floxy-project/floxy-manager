@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	dbSchema        = "workflows"
+	dbSchema        = "workflows_manager"
 	migrationsTable = "schema_migrations_manager"
 )
 

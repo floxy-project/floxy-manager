@@ -27,7 +27,7 @@ func (r *Repository) Create(ctx context.Context, userDTO domain.UserDTO) (domain
 	executor := r.getExecutor(ctx)
 
 	const query = `
-INSERT INTO workflows.users (username, email, password_hash, is_superuser, is_active, created_at, is_tmp_password, is_external)
+INSERT INTO  workflows_manager.users (username, email, password_hash, is_superuser, is_active, created_at, is_tmp_password, is_external)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, username, email, password_hash, is_superuser,
     is_active, created_at, last_login, is_tmp_password, is_external`
@@ -65,7 +65,7 @@ RETURNING id, username, email, password_hash, is_superuser,
 func (r *Repository) GetByID(ctx context.Context, id domain.UserID) (domain.User, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.users WHERE id = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.users WHERE id = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, id)
 	if err != nil {
@@ -101,7 +101,7 @@ func (r *Repository) ExistsByID(ctx context.Context, id domain.UserID) (bool, er
 func (r *Repository) GetByUsername(ctx context.Context, username string) (domain.User, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.users WHERE username = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.users WHERE username = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, username)
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *Repository) GetByUsername(ctx context.Context, username string) (domain
 func (r *Repository) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.users WHERE email = $1 LIMIT 1`
+	const query = `SELECT * FROM  workflows_manager.users WHERE email = $1 LIMIT 1`
 
 	rows, err := executor.Query(ctx, query, email)
 	if err != nil {
@@ -147,7 +147,7 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (domain.User,
 func (r *Repository) FetchByIDs(ctx context.Context, ids []domain.UserID) ([]domain.User, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.users WHERE id = ANY($1)`
+	const query = `SELECT * FROM  workflows_manager.users WHERE id = ANY($1)`
 
 	rows, err := executor.Query(ctx, query, ids)
 	if err != nil {
@@ -175,7 +175,7 @@ func (r *Repository) Update(ctx context.Context, user *domain.User) error {
 	executor := r.getExecutor(ctx)
 
 	const query = `
-UPDATE workflows.users
+UPDATE  workflows_manager.users
 SET username = $1, email = $2, password_hash = $3, is_superuser = $4, is_active = $5, last_login = $6,
     is_tmp_password = $7, is_external = $8, license_accepted = $9, updated_at = NOW()
 WHERE id = $10`
@@ -207,7 +207,7 @@ func (r *Repository) Delete(ctx context.Context, id domain.UserID) error {
 	executor := r.getExecutor(ctx)
 
 	const query = `
-DELETE FROM workflows.users
+DELETE FROM  workflows_manager.users
 WHERE id = $1`
 
 	_, err := executor.Exec(ctx, query, id)
@@ -221,7 +221,7 @@ WHERE id = $1`
 func (r *Repository) List(ctx context.Context) ([]domain.User, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT * FROM workflows.users ORDER BY id`
+	const query = `SELECT * FROM  workflows_manager.users ORDER BY id`
 
 	rows, err := executor.Query(ctx, query)
 	if err != nil {
@@ -247,7 +247,7 @@ func (r *Repository) List(ctx context.Context) ([]domain.User, error) {
 func (r *Repository) UpdateLastLogin(ctx context.Context, id domain.UserID) error {
 	executor := r.getExecutor(ctx)
 
-	const query = `UPDATE workflows.users SET last_login = NOW(), updated_at = NOW() WHERE id = $1;`
+	const query = `UPDATE  workflows_manager.users SET last_login = NOW(), updated_at = NOW() WHERE id = $1;`
 
 	_, err := executor.Exec(ctx, query, id)
 
@@ -257,7 +257,7 @@ func (r *Repository) UpdateLastLogin(ctx context.Context, id domain.UserID) erro
 func (r *Repository) UpdatePassword(ctx context.Context, id domain.UserID, passwordHash string) error {
 	executor := r.getExecutor(ctx)
 
-	const query = `UPDATE workflows.users SET password_hash = $1, is_tmp_password = false, updated_at = NOW() WHERE id = $2;`
+	const query = `UPDATE  workflows_manager.users SET password_hash = $1, is_tmp_password = false, updated_at = NOW() WHERE id = $2;`
 
 	_, err := executor.Exec(ctx, query, passwordHash, id)
 
@@ -275,7 +275,7 @@ func (r *Repository) Update2FA(
 	executor := r.getExecutor(ctx)
 
 	const query = `
-UPDATE workflows.users
+UPDATE  workflows_manager.users
 SET two_fa_enabled = $1, two_fa_secret = $2, two_fa_confirmed_at = $3, updated_at = NOW()
 WHERE id = $4`
 

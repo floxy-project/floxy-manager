@@ -26,7 +26,7 @@ func NewRoles(pool *pgxpool.Pool) *Roles {
 func (r *Roles) List(ctx context.Context) ([]domain.Role, error) {
 	exec := getExecutor(ctx, r.db)
 
-	const query = `select * from workflows.roles order by created_at desc`
+	const query = `select * from  workflows_manager.roles order by created_at desc`
 
 	rows, err := exec.Query(ctx, query)
 	if err != nil {
@@ -50,7 +50,7 @@ func (r *Roles) List(ctx context.Context) ([]domain.Role, error) {
 func (r *Roles) GetByKey(ctx context.Context, key string) (domain.Role, error) {
 	exec := getExecutor(ctx, r.db)
 
-	const query = `select * from workflows.roles where key = $1 limit 1`
+	const query = `select * from  workflows_manager.roles where key = $1 limit 1`
 
 	rows, err := exec.Query(ctx, query, key)
 	if err != nil {
@@ -73,7 +73,7 @@ func (r *Roles) GetByKey(ctx context.Context, key string) (domain.Role, error) {
 func (r *Roles) GetByID(ctx context.Context, id domain.RoleID) (domain.Role, error) {
 	exec := getExecutor(ctx, r.db)
 
-	const query = `select * from workflows.roles where id = $1 limit 1`
+	const query = `select * from  workflows_manager.roles where id = $1 limit 1`
 
 	rows, err := exec.Query(ctx, query, id)
 	if err != nil {
@@ -108,7 +108,7 @@ func NewPermissions(pool *pgxpool.Pool) *Permissions {
 func (r *Permissions) List(ctx context.Context) ([]domain.Permission, error) {
 	exec := getExecutor(ctx, r.db)
 
-	const query = `select * from workflows.permissions order by key`
+	const query = `select * from  workflows_manager.permissions order by key`
 
 	rows, err := exec.Query(ctx, query)
 	if err != nil {
@@ -133,8 +133,8 @@ func (r *Permissions) ListForRole(ctx context.Context, roleID domain.RoleID) ([]
 	exec := getExecutor(ctx, r.db)
 
 	const query = `
-		select p.* from workflows.role_permissions rp
-		join workflows.permissions p on p.id = rp.permission_id
+		select p.* from  workflows_manager.role_permissions rp
+		join  workflows_manager.permissions p on p.id = rp.permission_id
 		where rp.role_id = $1
 		order by p.key
 	`
@@ -164,9 +164,9 @@ func (r *Permissions) ListForAllRoles(ctx context.Context) (map[domain.Role][]do
 	const query = `
 		select r.id as id, r.key as key, r.name as name, r.description as description, r.created_at as created_at,
 		       p.id as p_id, p.key as p_key, p.name as p_name
-		from workflows.roles r
-		left join workflows.role_permissions rp on rp.role_id = r.id
-		left join workflows.permissions p on p.id = rp.permission_id
+		from  workflows_manager.roles r
+		left join  workflows_manager.role_permissions rp on rp.role_id = r.id
+		left join  workflows_manager.permissions p on p.id = rp.permission_id
 		order by r.created_at desc, p.key
 	`
 
@@ -211,8 +211,8 @@ func (r *Permissions) RoleHasPermission(
 	exec := getExecutor(ctx, r.db)
 
 	const query = `select exists(
-select 1 from workflows.role_permissions rp
-join workflows.permissions p on p.id = rp.permission_id
+select 1 from  workflows_manager.role_permissions rp
+join  workflows_manager.permissions p on p.id = rp.permission_id
 where rp.role_id = $1 and p.key = $2
 )`
 
@@ -243,7 +243,7 @@ func (r *Memberships) GetForUserProject(
 ) (string, error) { // roleID
 	exec := getExecutor(ctx, r.db)
 
-	const query = `select role_id from workflows.memberships where project_id = $1 and user_id = $2 limit 1`
+	const query = `select role_id from  workflows_manager.memberships where project_id = $1 and user_id = $2 limit 1`
 
 	var roleID string
 	if err := exec.QueryRow(ctx, query, projectID, userID).Scan(&roleID); err != nil {
@@ -265,8 +265,8 @@ func (r *Memberships) ListForProject(
 
 	const query = `
 select m.id, m.project_id, m.user_id, m.role_id, r.key as role_key, r.name as role_name, m.created_at
-from workflows.memberships m
-join workflows.roles r on r.id = m.role_id
+from  workflows_manager.memberships m
+join  workflows_manager.roles r on r.id = m.role_id
 where m.project_id = $1
 order by m.created_at desc`
 
@@ -299,12 +299,12 @@ func (r *Memberships) Create(
 
 	const query = `
 with ins as (
-	insert into workflows.memberships (project_id, user_id, role_id)
+	insert into  workflows_manager.memberships (project_id, user_id, role_id)
 	values ($1, $2, $3)
 	returning id, project_id, user_id, role_id, created_at
 )
 select ins.id, ins.project_id, ins.user_id, ins.role_id, r.key as role_key, r.name as role_name, ins.created_at
-from ins join workflows.roles r on r.id = ins.role_id`
+from ins join  workflows_manager.roles r on r.id = ins.role_id`
 
 	row := exec.QueryRow(ctx, query, projectID, userID, roleID)
 	var model membershipModel
@@ -332,8 +332,8 @@ func (r *Memberships) Get(
 
 	const query = `
 select m.id, m.project_id, m.user_id, m.role_id, r.key as role_key, r.name as role_name, m.created_at
-from workflows.memberships m
-join workflows.roles r on r.id = m.role_id
+from  workflows_manager.memberships m
+join  workflows_manager.roles r on r.id = m.role_id
 where m.project_id = $1 and m.id = $2
 limit 1`
 
@@ -368,12 +368,12 @@ func (r *Memberships) Update(
 
 	const query = `
 with upd as (
-	update workflows.memberships set role_id = $3, updated_at = now()
+	update  workflows_manager.memberships set role_id = $3, updated_at = now()
 	where project_id = $1 and id = $2
 	returning id, project_id, user_id, role_id, created_at
 )
 select upd.id, upd.project_id, upd.user_id, upd.role_id, r.key as role_key, r.name as role_name, upd.created_at
-from upd join workflows.roles r on r.id = upd.role_id`
+from upd join  workflows_manager.roles r on r.id = upd.role_id`
 
 	row := exec.QueryRow(ctx, query, projectID, membershipID, roleID)
 	var model membershipModel
@@ -399,7 +399,7 @@ from upd join workflows.roles r on r.id = upd.role_id`
 func (r *Memberships) Delete(ctx context.Context, projectID domain.ProjectID, membershipID domain.MembershipID) error {
 	exec := getExecutor(ctx, r.db)
 
-	const query = `delete from workflows.memberships where project_id = $1 and id = $2`
+	const query = `delete from  workflows_manager.memberships where project_id = $1 and id = $2`
 
 	ct, err := exec.Exec(ctx, query, projectID, membershipID)
 	if err != nil {

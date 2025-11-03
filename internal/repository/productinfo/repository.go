@@ -21,7 +21,7 @@ func New(pool *pgxpool.Pool) *Repository {
 func (r *Repository) GetClientID(ctx context.Context) (string, error) {
 	executor := r.getExecutor(ctx)
 
-	const query = `SELECT value FROM workflows.product_info WHERE key = 'client_id' LIMIT 1`
+	const query = `SELECT value FROM workflows_manager.product_info WHERE key = 'client_id' LIMIT 1`
 
 	row := executor.QueryRow(ctx, query)
 
