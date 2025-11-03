@@ -165,7 +165,7 @@ func (h *SSOHandler) ACS(w http.ResponseWriter, r *http.Request) {
 	samlResponse := r.FormValue("SAMLResponse")
 	relayState := r.FormValue("RelayState")
 
-	slog.Info("SAML ACS endpoint called",
+	slog.Debug("SAML ACS endpoint called",
 		"saml_response_length", len(samlResponse),
 		"relay_state", relayState,
 		"method", r.Method,
@@ -178,37 +178,32 @@ func (h *SSOHandler) ACS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// After ParseForm(), PostForm is already populated with form values
-	// However, we need to ensure it's explicitly set for the SAML library
+	// Ensure PostForm is properly set for the SAML library
 	ctx := r.Context()
 
-	// Get or create raw request from context
+	// Get or use the original request from context
 	rawReq := appcontext.RawRequest(ctx)
 	if rawReq == nil {
 		rawReq = r
 	}
 
-	// Create a new request copy with PostForm explicitly set
-	// This is needed because SAML library expects PostForm to be set
-	rawReqCopy := rawReq.Clone(ctx)
-	if rawReqCopy == nil {
-		rawReqCopy = r
+	// Ensure PostForm is set on the request (it should be after ParseForm, but ensure it)
+	// The SAML library needs PostForm to parse POST binding responses
+	if rawReq.PostForm == nil {
+		rawReq.PostForm = make(url.Values)
 	}
-
-	// Explicitly set PostForm for SAML library (as shown in user's example)
-	if rawReqCopy.PostForm == nil {
-		rawReqCopy.PostForm = make(url.Values)
-	}
-	rawReqCopy.PostForm.Set("SAMLResponse", samlResponse)
+	// Make sure values are set (they should already be from ParseForm)
+	rawReq.PostForm.Set("SAMLResponse", samlResponse)
 	if relayState != "" {
-		rawReqCopy.PostForm.Set("RelayState", relayState)
+		rawReq.PostForm.Set("RelayState", relayState)
 	}
 
-	// Put the request with PostForm in context for SAML processing
-	ctx = appcontext.WithRawRequest(ctx, rawReqCopy)
+	// Put the request in context for SAML processing
+	ctx = appcontext.WithRawRequest(ctx, rawReq)
 
 	// Call SSOCallback with AD SAML provider
 	accessToken, refreshToken, _, err := h.usersService.SSOCallback(
-		ctx, domain.SSOProviderNameADSaml, rawReqCopy, samlResponse, relayState,
+		ctx, domain.SSOProviderNameADSaml, appcontext.RawRequest(ctx), samlResponse, relayState,
 	)
 	if err != nil {
 		slog.Error("SSO assert failed", "error", err)

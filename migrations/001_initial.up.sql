@@ -1,11 +1,9 @@
 create schema if not exists workflows_manager;
 create extension if not exists "uuid-ossp";
 
-create domain workflows_manager.email as varchar(255)
-    check (value ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$');
+create domain workflows_manager.email as varchar(255);
 
-create domain workflows_manager.username as varchar(255)
-    check (value ~* '^[a-zA-Z0-9._-]{3,255}$');
+create domain workflows_manager.username as varchar(255);
 
 -- product_info
 create table if not exists workflows_manager.product_info

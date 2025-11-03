@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/base64"
 	"encoding/pem"
 	"encoding/xml"
 	"errors"
@@ -20,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -245,7 +247,7 @@ func (p *SAMLProvider) Authenticate(
 		return nil, fmt.Errorf("SAML provider '%s' is not enabled", p.name)
 	}
 
-	slog.Info("SAML Authenticate called",
+	slog.Debug("SAML Authenticate called",
 		"provider", p.name,
 		"state", state,
 		"method", req.Method,
@@ -268,14 +270,14 @@ func (p *SAMLProvider) Authenticate(
 		return nil, fmt.Errorf("invalid id type: %T", id)
 	}
 
-	slog.Info("SAML request ID found",
+	slog.Debug("SAML request ID found",
 		"provider", p.name,
 		"state", state,
 		"request_id", idStr,
 	)
 
 	// Log request details before parsing
-	slog.Info("Parsing SAML response",
+	slog.Debug("Parsing SAML response",
 		"provider", p.name,
 		"expected_request_id", idStr,
 		"state", state,
@@ -285,26 +287,61 @@ func (p *SAMLProvider) Authenticate(
 	)
 
 	if req.PostForm != nil {
-		slog.Info("Request PostForm values",
+		slog.Debug("Request PostForm values",
 			"saml_response_present", req.PostForm.Get("SAMLResponse") != "",
 			"relay_state", req.PostForm.Get("RelayState"),
 		)
 	}
 
+	// Try to decode SAML response to get more details about the error
+	if req.PostForm != nil {
+		samlResponseEncoded := req.PostForm.Get("SAMLResponse")
+		if samlResponseEncoded != "" {
+			// Decode base64 SAML response to inspect it
+			var samlResponseDecoded []byte
+			// Try URL decoding first (for SAML POST binding)
+			if decoded, err := url.QueryUnescape(samlResponseEncoded); err == nil {
+				samlResponseDecoded, _ = base64.StdEncoding.DecodeString(decoded)
+			}
+			if len(samlResponseDecoded) > 0 {
+				// Try to extract InResponseTo from XML for debugging
+				if inResponseTo := extractInResponseTo(samlResponseDecoded); inResponseTo != "" {
+					slog.Debug("SAML response decoded",
+						"in_response_to", inResponseTo,
+						"expected_request_id", idStr,
+						"matches", inResponseTo == idStr,
+					)
+				}
+			}
+		}
+	}
+
 	// Parse SAML response - this validates signature and InResponseTo
 	assertion, err := p.sp.ParseResponse(req, []string{idStr})
 	if err != nil {
-		slog.Error("SAML ParseResponse failed",
-			"provider", p.name,
-			"expected_request_id", idStr,
-			"state", state,
-			"error", err,
-			"error_type", fmt.Sprintf("%T", err),
-		)
+		// Try to extract more details from the error
+		var invalidResponseErr *saml.InvalidResponseError
+		if errors.As(err, &invalidResponseErr) {
+			slog.Error("SAML ParseResponse failed - InvalidResponseError",
+				"provider", p.name,
+				"expected_request_id", idStr,
+				"state", state,
+				"error", invalidResponseErr,
+				"private_err", invalidResponseErr.PrivateErr,
+			)
+		} else {
+			slog.Error("SAML ParseResponse failed",
+				"provider", p.name,
+				"expected_request_id", idStr,
+				"state", state,
+				"error", err,
+				"error_type", fmt.Sprintf("%T", err),
+			)
+		}
 		return nil, fmt.Errorf("invalid SAML response: %w. Expected Request ID: %s", err, idStr)
 	}
 
-	slog.Info("SAML response parsed successfully",
+	slog.Debug("SAML response parsed successfully",
 		"provider", p.name,
 		"request_id", idStr,
 		"assertion_id", assertion.ID,
@@ -532,7 +569,7 @@ func (p *SAMLProvider) makeSP(ctx context.Context) (*saml.ServiceProvider, error
 	}
 
 	// Log metadata details for debugging
-	slog.Info("SAML IDP metadata fetched",
+	slog.Debug("SAML IDP metadata fetched",
 		"idp_metadata_url", p.config.IDPMetadataURL,
 		"idp_entity_id", metadata.EntityID,
 		"idp_sso_descriptors_count", len(metadata.IDPSSODescriptors),
@@ -541,12 +578,12 @@ func (p *SAMLProvider) makeSP(ctx context.Context) (*saml.ServiceProvider, error
 	// Check if certificates are present in metadata
 	if len(metadata.IDPSSODescriptors) > 0 {
 		descriptor := metadata.IDPSSODescriptors[0]
-		slog.Info("SAML IDP SSO descriptor",
+		slog.Debug("SAML IDP SSO descriptor",
 			"want_authn_requests_signed", descriptor.WantAuthnRequestsSigned,
 			"key_descriptors_count", len(descriptor.KeyDescriptors),
 		)
 		for i, keyDesc := range descriptor.KeyDescriptors {
-			slog.Info("SAML IDP key descriptor",
+			slog.Debug("SAML IDP key descriptor",
 				"index", i,
 				"use", keyDesc.Use,
 				"has_certificate", keyDesc.EncryptionMethods != nil,
@@ -635,6 +672,30 @@ func countSyncMap(m *sync.Map) int {
 		return true
 	})
 	return count
+}
+
+// extractInResponseTo extracts InResponseTo attribute from SAML response XML
+func extractInResponseTo(samlResponseXML []byte) string {
+	type Response struct {
+		XMLName      xml.Name `xml:"Response"`
+		InResponseTo string   `xml:"InResponseTo,attr"`
+	}
+
+	var resp Response
+	if err := xml.Unmarshal(samlResponseXML, &resp); err == nil {
+		return resp.InResponseTo
+	}
+
+	// Fallback: try to find InResponseTo in the raw XML
+	xmlStr := string(samlResponseXML)
+	if idx := strings.Index(xmlStr, `InResponseTo="`); idx != -1 {
+		start := idx + len(`InResponseTo="`)
+		if end := strings.Index(xmlStr[start:], `"`); end != -1 {
+			return xmlStr[start : start+end]
+		}
+	}
+
+	return ""
 }
 
 func (p *SAMLProvider) generateSAMLKeys(certPath, keyPath string) error {
