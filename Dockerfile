@@ -34,10 +34,12 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Final stage
-FROM alpine:latest
+FROM alpine:latest AS prod
 
 # Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates
+RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache curl
+RUN apk add --no-cache tzdata
 
 WORKDIR /app
 

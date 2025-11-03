@@ -1,0 +1,204 @@
+version: '3.8'
+
+services:
+  floxym-reverse-proxy:
+    build:
+      context: ../reverse-proxy
+      dockerfile: Dockerfile
+    container_name: floxym-reverse-proxy
+    ports:
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
+      - BACKEND_URL=http://floxym:3000
+      - FRONTEND_URL=http://floxym:3000
+      - SSL_CERT=${SSL_CERT}
+      - SSL_CERT_KEY=${SSL_CERT_KEY}
+      - SECURE_LINK_MD5=${SECURE_LINK_MD5}
+    volumes:
+      - "./nginx/ssl:/etc/nginx/ssl"
+    depends_on:
+      floxym:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "netstat", "-tln", "|", "grep", "443 && netstat", "-tln", "|", "grep", "8090"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  floxym:
+    container_name: floxym
+    build:
+      context: ../
+      target: prod
+      dockerfile: Dockerfile
+    env_file:
+      - compose.env
+    command: ["/app/main", "server"]
+    volumes:
+      - "./secrets:/opt/floxym/secrets"
+    depends_on:
+      floxym-postgresql:
+        condition: service_healthy
+      floxym-mailhog:
+        condition: service_healthy
+      floxym-openldap:
+        condition: service_healthy
+      floxym-keycloak:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--silent", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  floxym-postgresql:
+    image: postgres:17
+    container_name: floxym-postgresql
+    restart: always
+    environment:
+      POSTGRES_USER: floxy
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: floxy
+      PGDATA: /var/lib/postgresql/data/main
+    volumes:
+      - "postgresql_floxym:/var/lib/postgresql/data/main"
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "PG_PASSWORD=password pg_isready -U user -d db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  floxym-mailhog:
+    container_name: floxym-mailhog
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  floxym-openldap:
+    container_name: floxym-openldap
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: "Floxy"
+      LDAP_DOMAIN: "floxy.local"
+      LDAP_ADMIN_PASSWORD: "Dev123456"
+      LDAP_CONFIG_PASSWORD: "Dev123456"
+      LDAP_READONLY_USER: "false"
+      LDAP_TLS_VERIFY_CLIENT: "never"
+    volumes:
+      - ldap_data_floxym:/var/lib/ldap
+      - ldap_config_floxym:/etc/ldap/slapd.d
+      - ./ldap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+    ports:
+      - "389:389"
+      - "636:636"
+    restart: always
+    command: ["--copy-service", "--loglevel", "debug"]
+    healthcheck:
+      test: ["CMD", "ldapwhoami", "-x", "-H", "ldap://localhost:389"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  floxym-phpldapadmin:
+    container_name: floxym-phpldapadmin
+    image: osixia/phpldapadmin:0.9.0
+    ports:
+      - "9080:80"
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "floxym-openldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    depends_on:
+      floxym-openldap:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/80'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  floxym-keycloak-db:
+    image: postgres:17
+    container_name: floxym-keycloak-db
+    restart: always
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak123
+      POSTGRES_DB: keycloak
+      PGDATA: /var/lib/postgresql/data/keycloak
+    volumes:
+      - "keycloak_db_floxym:/var/lib/postgresql/data/keycloak"
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  floxym-keycloak:
+    container_name: floxym-keycloak.local
+    image: quay.io/keycloak/keycloak:26.4
+    environment:
+      KEYCLOAK_FEATURES: saml
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: Dev123456
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://floxym-keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak123
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_HTTPS_ENABLED: false
+      KC_PROXY_HEADERS: xforwarded
+      KC_PROXY: edge
+      KC_HEALTH_ENABLED: true
+      KC_LOG_LEVEL: org.keycloak.saml.SP:debug,org.keycloak.protocol.saml:debug,org.keycloak.events:debug
+      KC_HOSTNAME: floxym-keycloak.local
+      KC_HTTP_PORT: 9090
+      KC_HOSTNAME_PORT: 9090
+      KC_FRONTEND_URL: http://floxym-keycloak.local:9090
+      KC_SPI_X_FRAME_OPTIONS_ENABLED: "false"
+      KC_HTTP_COOKIE_SAME_SITE: "None"
+    ports:
+      - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      floxym-keycloak-db:
+        condition: service_healthy
+      floxym-openldap:
+        condition: service_healthy
+    restart: always
+    command: start-dev
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/9090'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  postgresql_floxym:
+  ldap_data_floxym:
+  ldap_config_floxym:
+  keycloak_db_floxym:

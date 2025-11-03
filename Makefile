@@ -1,3 +1,14 @@
+NAMESPACE=floxym
+
+#
+# Extra targets
+#
+-include dev/dev.mk
+
+#
+# Local targets
+#
+
 .PHONY: build run dev clean docker-build docker-run
 
 # Build everything

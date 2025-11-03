@@ -138,6 +138,9 @@ func (h *LDAPHandler) TestLDAPConnection(w http.ResponseWriter, r *http.Request)
 
 	ctx := r.Context()
 
+	// Ensure enabled is set to true for testing
+	testConfig.Enabled = true
+
 	// Save current config if exists
 	var oldConfig *domain.LDAPConfig
 	if savedConfig, err := h.settingsUseCase.GetLDAPConfig(ctx); err == nil {
@@ -147,6 +150,14 @@ func (h *LDAPHandler) TestLDAPConnection(w http.ResponseWriter, r *http.Request)
 	// Update to test config temporarily
 	if err := h.ldapUseCase.UpdateConfig(ctx, &testConfig); err != nil {
 		respondError(w, http.StatusBadRequest, "Failed to update config for test")
+		return
+	}
+
+	// Force reload config synchronously before testing
+	// UpdateConfig triggers ReloadConfig asynchronously, so we need to reload manually
+	// to ensure the test uses the updated configuration
+	if err := h.ldapUseCase.ReloadConfig(ctx); err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to reload config for test")
 		return
 	}
 

@@ -144,10 +144,18 @@ func (s *Service) TestConnection(ctx context.Context) error {
 	defer s.mu.RUnlock()
 
 	if !s.isEnabled() {
+		slog.Warn("LDAP test connection: LDAP is disabled", "enabled", s.enabled, "hasConfig", s.currentConfig != nil)
+		if s.currentConfig != nil {
+			slog.Info("LDAP test connection: config details",
+				"configEnabled", s.currentConfig.Enabled,
+				"url", s.currentConfig.URL,
+				"bindDN", s.currentConfig.BindDN)
+		}
 		return ErrLDAPDisabled
 	}
 
 	if s.client == nil {
+		slog.Warn("LDAP test connection: client is nil", "enabled", s.enabled, "hasConfig", s.currentConfig != nil)
 		return ErrLDAPNotConfigured
 	}
 
@@ -391,8 +399,10 @@ func (s *Service) reloadConfig(ctx context.Context, reason string) error {
 	firstStart := s.currentConfig == nil
 
 	s.enabled = config.Enabled
+	slog.Debug("LDAP reloadConfig", "enabled", config.Enabled, "url", config.URL, "reason", reason)
 
 	if !s.enabled {
+		slog.Info("LDAP config reload: disabled, clearing client", "reason", reason)
 		s.client = nil
 
 		return nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/rom8726/floxy-manager/internal/contract"
@@ -29,6 +30,10 @@ func New(settingsRepo contract.SettingRepository, secret string) *Service {
 func (s *Service) GetLDAPConfig(ctx context.Context) (*domain.LDAPConfig, error) {
 	setting, err := s.settingsRepo.GetByName(ctx, "ldap_config")
 	if err != nil {
+		// Don't wrap ErrEntityNotFound to allow errors.Is to work
+		if errors.Is(err, domain.ErrEntityNotFound) {
+			return nil, domain.ErrEntityNotFound
+		}
 		return nil, fmt.Errorf("get LDAP config: %w", err)
 	}
 

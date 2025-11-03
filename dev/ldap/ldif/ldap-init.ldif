@@ -1,0 +1,101 @@
+dn: ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+# Departments
+dn: ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: Engineering
+
+dn: ou=Marketing,ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: Marketing
+
+dn: ou=HR,ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: HR
+
+# Teams in Engineering
+dn: ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: Teams
+
+dn: ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: Backend
+
+dn: ou=Frontend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: organizationalUnit
+ou: Frontend
+
+# Backend team users
+dn: uid=alice,ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: inetOrgPerson
+uid: alice
+cn: Alice Smith
+sn: Smith
+mail: alice@floxy.local
+userPassword: alice123
+
+dn: uid=bob,ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: inetOrgPerson
+uid: bob
+cn: Bob Black
+sn: Black
+mail: bob@floxy.local
+userPassword: bob123
+
+# Frontend team user
+dn: uid=carol,ou=Frontend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+objectClass: inetOrgPerson
+uid: carol
+cn: Carol Green
+sn: Green
+mail: carol@floxy.local
+userPassword: carol123
+
+# Marketing team user
+dn: uid=dave,ou=Marketing,ou=users,dc=floxy,dc=local
+objectClass: inetOrgPerson
+uid: dave
+cn: Dave Blue
+sn: Blue
+mail: dave@floxy.local
+userPassword: dave123
+
+# HR team user
+dn: uid=emma,ou=HR,ou=users,dc=floxy,dc=local
+objectClass: inetOrgPerson
+uid: emma
+cn: Emma White
+sn: White
+mail: emma@floxy.local
+userPassword: emma123
+
+# Groups
+dn: cn=Developers,ou=groups,dc=floxy,dc=local
+objectClass: groupOfNames
+cn: Developers
+member: uid=alice,ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+member: uid=bob,ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+member: uid=carol,ou=Frontend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+
+dn: cn=Backend Team,ou=groups,dc=floxy,dc=local
+objectClass: groupOfNames
+cn: Backend Team
+member: uid=alice,ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+member: uid=bob,ou=Backend,ou=Teams,ou=Engineering,ou=users,dc=floxy,dc=local
+
+dn: cn=HR Team,ou=groups,dc=floxy,dc=local
+objectClass: groupOfNames
+cn: HR Team
+member: uid=emma,ou=HR,ou=users,dc=floxy,dc=local
+
+dn: cn=Marketing Team,ou=groups,dc=floxy,dc=local
+objectClass: groupOfNames
+cn: Marketing Team
+member: uid=dave,ou=Marketing,ou=users,dc=floxy,dc=local

@@ -49,5 +49,6 @@ type LDAPSyncUseCase interface {
 	GetSyncLogDetails(ctx context.Context, id uint) (domain.LDAPSyncLog, error)
 	GetStatistics(ctx context.Context) (domain.LDAPStatistics, error)
 	UpdateConfig(ctx context.Context, cfg *domain.LDAPConfig) error
+	ReloadConfig(ctx context.Context) error
 	Disable(ctx context.Context) error
 }

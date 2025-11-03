@@ -191,6 +191,11 @@ func (uc *UseCase) UpdateConfig(ctx context.Context, cfg *domain.LDAPConfig) err
 	return nil
 }
 
+// ReloadConfig reloads LDAP configuration synchronously.
+func (uc *UseCase) ReloadConfig(ctx context.Context) error {
+	return uc.ldapService.ReloadConfig(ctx)
+}
+
 func (uc *UseCase) Disable(ctx context.Context) error {
 	if err := uc.settingsUseCase.UpdateLDAPConfig(ctx, &domain.LDAPConfig{Enabled: false}); err != nil {
 		return fmt.Errorf("failed to update LDAP config: %w", err)
