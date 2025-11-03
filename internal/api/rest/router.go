@@ -41,6 +41,8 @@ func NewRouter(
 	projectsRepo contract.ProjectsRepository,
 	workflowsRepo *workflows.Repository,
 	permissionsService contract.PermissionsService,
+	rolesRepo contract.RolesRepository,
+	membershipsRepo contract.MembershipsRepository,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -72,7 +74,7 @@ func NewRouter(
 	twoFAHandler := handlers.NewTwoFAHandler(usersService)
 	ssoHandler := handlers.NewSSOHandler(usersService)
 	tenantsHandler := handlers.NewTenantsHandler(tenantsRepo)
-	projectsHandler := handlers.NewProjectsHandler(projectsRepo)
+	projectsHandler := handlers.NewProjectsHandler(projectsRepo, permissionsService, rolesRepo, membershipsRepo)
 	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo)
 	usersHandler := handlers.NewUsersHandler(usersService, projectsRepo, permissionsService)
 
@@ -95,7 +97,11 @@ func NewRouter(
 	router.POST("/api/v1/auth/2fa/reset", wrapHandler(twoFAHandler.Reset2FA))
 
 	router.GET("/api/v1/tenants", wrapHandler(tenantsHandler.List))
+	router.POST("/api/v1/tenants", wrapHandler(tenantsHandler.Create))
+	router.DELETE("/api/v1/tenants/:id", wrapHandler(tenantsHandler.Delete))
 	router.GET("/api/v1/projects", wrapHandler(projectsHandler.List))
+	router.POST("/api/v1/projects", wrapHandler(projectsHandler.Create))
+	router.DELETE("/api/v1/projects/:id", wrapHandler(projectsHandler.Delete))
 
 	// User account endpoints
 	router.GET("/api/v1/users/me", wrapHandler(usersHandler.GetCurrentUser))

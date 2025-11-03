@@ -261,7 +261,17 @@ func (app *App) newAPIServer() (*httpserver.Server, error) {
 		return nil, fmt.Errorf("resolve workflows repository component: %w", err)
 	}
 
-	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv, tenantsRepo, projectsRepo, workflowsRepo, permService)
+	var rolesRepo contract.RolesRepository
+	if err := app.container.Resolve(&rolesRepo); err != nil {
+		return nil, fmt.Errorf("resolve roles repository component: %w", err)
+	}
+
+	var membershipsRepo contract.MembershipsRepository
+	if err := app.container.Resolve(&membershipsRepo); err != nil {
+		return nil, fmt.Errorf("resolve memberships repository component: %w", err)
+	}
+
+	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv, tenantsRepo, projectsRepo, workflowsRepo, permService, rolesRepo, membershipsRepo)
 	if err != nil {
 		return nil, fmt.Errorf("create API router: %w", err)
 	}

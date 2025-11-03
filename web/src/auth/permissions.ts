@@ -52,6 +52,28 @@ export function useRBAC(projectId?: string | number) {
 
         const check = (p: PermissionKey) => hasPermission(projectId, p, { isSuperuser: superuser, projectPermissions: pp });
 
+        // Check if user can create projects (superuser or has project.manage in any project)
+        const canCreateProject = () => {
+            if (superuser) return true;
+            if (!pp) return false;
+            // Check if user has project.manage permission in any project
+            for (const perms of Object.values(pp)) {
+                if (perms && perms.includes(PERMISSIONS.project.manage)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Check if user can delete a specific project
+        const canDeleteProject = (projId?: string | number) => {
+            if (superuser) return true;
+            if (!projId || !pp) return false;
+            // Check if user has project.manage permission in this specific project
+            const perms = pp[String(projId)];
+            return perms && perms.includes(PERMISSIONS.project.manage);
+        };
+
         return {
             isSuperuser: superuser,
             has: check,
@@ -59,6 +81,8 @@ export function useRBAC(projectId?: string | number) {
             canManageProject: () => check(PERMISSIONS.project.manage),
             canViewAudit: () => check(PERMISSIONS.audit.view),
             canManageMembership: () => check(PERMISSIONS.membership.manage),
+            canCreateProject,
+            canDeleteProject,
         };
     }, [user, projectId]);
 

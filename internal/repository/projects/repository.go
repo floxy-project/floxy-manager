@@ -46,12 +46,12 @@ func (r *Repository) GetByID(ctx context.Context, id domain.ProjectID) (domain.P
 	return project.toDomain(), nil
 }
 
-func (r *Repository) Create(ctx context.Context, project *domain.ProjectDTO) (domain.ProjectID, error) {
+func (r *Repository) Create(ctx context.Context, project *domain.ProjectDTO, tenantID domain.TenantID) (domain.ProjectID, error) {
 	executor := r.getExecutor(ctx)
 
 	const query = `
 INSERT INTO  workflows_manager.projects (name, description, tenant_id, created_at, updated_at)
-VALUES ($1, $2, (SELECT id FROM  workflows_manager.tenants WHERE name = 'default'), $3, $3)
+VALUES ($1, $2, $3, $4, $4)
 RETURNING id`
 
 	var id int
@@ -59,6 +59,7 @@ RETURNING id`
 	err := executor.QueryRow(ctx, query,
 		project.Name,
 		project.Description,
+		tenantID.Int(),
 		time.Now(),
 	).Scan(&id)
 	if err != nil {
@@ -233,6 +234,23 @@ func (r *Repository) Count(ctx context.Context) (uint, error) {
 	}
 
 	return uint(count64), nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id domain.ProjectID) error {
+	executor := r.getExecutor(ctx)
+
+	const query = `DELETE FROM workflows_manager.projects WHERE id = $1`
+
+	result, err := executor.Exec(ctx, query, id.Int())
+	if err != nil {
+		return fmt.Errorf("delete project: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return domain.ErrEntityNotFound
+	}
+
+	return nil
 }
 
 //nolint:ireturn // it's ok here

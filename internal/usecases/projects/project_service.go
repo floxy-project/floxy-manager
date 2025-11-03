@@ -33,6 +33,7 @@ func (s *ProjectService) GetProject(ctx context.Context, id domain.ProjectID) (d
 func (s *ProjectService) CreateProject(
 	ctx context.Context,
 	name, description string,
+	tenantID domain.TenantID,
 ) (domain.Project, error) {
 	project := domain.ProjectDTO{
 		Name:        name,
@@ -42,7 +43,7 @@ func (s *ProjectService) CreateProject(
 	var id domain.ProjectID
 	err := s.txManager.ReadCommitted(ctx, func(ctx context.Context) error {
 		var err error
-		id, err = s.projectRepo.Create(ctx, &project)
+		id, err = s.projectRepo.Create(ctx, &project, tenantID)
 		if err != nil {
 			return err
 		}

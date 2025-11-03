@@ -71,6 +71,42 @@ func (r *Repository) List(ctx context.Context) ([]domain.Tenant, error) {
 	return tenants, nil
 }
 
+func (r *Repository) Create(ctx context.Context, name string) (domain.Tenant, error) {
+	executor := r.getExecutor(ctx)
+
+	const query = `INSERT INTO workflows_manager.tenants (name) VALUES ($1) RETURNING *`
+
+	rows, err := executor.Query(ctx, query, name)
+	if err != nil {
+		return domain.Tenant{}, fmt.Errorf("create tenant: %w", err)
+	}
+	defer rows.Close()
+
+	model, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[tenantModel])
+	if err != nil {
+		return domain.Tenant{}, fmt.Errorf("collect tenant: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id domain.TenantID) error {
+	executor := r.getExecutor(ctx)
+
+	const query = `DELETE FROM workflows_manager.tenants WHERE id = $1`
+
+	result, err := executor.Exec(ctx, query, id.Int())
+	if err != nil {
+		return fmt.Errorf("delete tenant: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return domain.ErrEntityNotFound
+	}
+
+	return nil
+}
+
 //nolint:ireturn // it's ok here
 func (r *Repository) getExecutor(ctx context.Context) db.Tx {
 	if tx := db.TxFromContext(ctx); tx != nil {

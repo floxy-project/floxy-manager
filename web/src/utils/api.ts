@@ -135,6 +135,19 @@ export interface SSOCallbackResponse {
   is_tmp_password?: boolean;
 }
 
+export interface CreateTenantRequest {
+  name: string;
+}
+
+export interface Tenant {
+  ID?: number;
+  Name?: string;
+  CreatedAt?: string;
+  id?: number;  // Fallback for lowercase
+  name?: string;
+  created_at?: string;
+}
+
 // Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: '',
@@ -187,7 +200,44 @@ const apiClient = {
   sSOCallback: async (data: SSOCallbackRequest): Promise<AxiosResponse<SSOCallbackResponse>> => {
     return api.post('/api/v1/auth/sso/callback', data);
   },
+
+  createTenant: async (data: CreateTenantRequest): Promise<AxiosResponse<Tenant>> => {
+    return api.post('/api/v1/tenants', data);
+  },
+
+  deleteTenant: async (id: number): Promise<AxiosResponse<{ message: string }>> => {
+    return api.delete(`/api/v1/tenants/${id}`);
+  },
+
+  createProject: async (data: CreateProjectRequest): Promise<AxiosResponse<Project>> => {
+    return api.post('/api/v1/projects', data);
+  },
+
+  deleteProject: async (id: number): Promise<AxiosResponse<{ message: string }>> => {
+    return api.delete(`/api/v1/projects/${id}`);
+  },
 };
+
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  tenant_id: number;
+}
+
+export interface Project {
+  ID?: number;
+  Name?: string;
+  Description?: string;
+  CreatedAt?: string;
+  UpdatedAt?: string;
+  ArchivedAt?: string | null;
+  id?: number;  // Fallback for lowercase
+  name?: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+  archived_at?: string | null;
+}
 
 export default apiClient;
 
