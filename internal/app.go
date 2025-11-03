@@ -261,7 +261,7 @@ func (app *App) newAPIServer() (*httpserver.Server, error) {
 		return nil, fmt.Errorf("resolve workflows repository component: %w", err)
 	}
 
-	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv, tenantsRepo, projectsRepo, workflowsRepo)
+	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv, tenantsRepo, projectsRepo, workflowsRepo, permService)
 	if err != nil {
 		return nil, fmt.Errorf("create API router: %w", err)
 	}

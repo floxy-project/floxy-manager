@@ -323,6 +323,28 @@ func (s *UsersService) UpdatePassword(ctx context.Context, id domain.UserID, old
 	return s.usersRepo.UpdatePassword(ctx, id, passwordHash)
 }
 
+func (s *UsersService) ChangeTemporaryPassword(ctx context.Context, id domain.UserID, newPassword string) error {
+	user, err := s.usersRepo.GetByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("get user by id: %w", err)
+	}
+
+	if user.IsExternal {
+		return domain.ErrPermissionDenied
+	}
+
+	if !user.IsTmpPassword {
+		return domain.ErrPermissionDenied
+	}
+
+	passwordHash, err := passworder.PasswordHash(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	return s.usersRepo.UpdatePassword(ctx, id, passwordHash)
+}
+
 func (s *UsersService) ForgotPassword(ctx context.Context, email string) error {
 	slog.Debug("processing forgot password request")
 

@@ -110,7 +110,20 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </button>
               
               {/* Logo */}
-              <div className="flex items-center" style={{ marginLeft: '-100px' }}>
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity" 
+                style={{ marginLeft: '-100px' }}
+                onClick={() => navigate('/tenants')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate('/tenants');
+                  }
+                }}
+                aria-label="Go to home page"
+              >
                 <img 
                   src={logoImage} 
                   alt="Floxy Manager" 

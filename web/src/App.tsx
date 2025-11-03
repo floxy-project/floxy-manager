@@ -13,6 +13,9 @@ import { Stats } from './pages/Stats';
 import { DLQ } from './pages/DLQ';
 import { DLQDetail } from './pages/DLQDetail';
 import { Login } from './pages/Login';
+import { ChangePassword } from './pages/ChangePassword';
+import { TwoFAVerify } from './pages/TwoFAVerify';
+import { Account } from './pages/Account';
 import { useAuth } from './hooks/useAuth';
 
 // Protected Route Component
@@ -44,6 +47,19 @@ function App() {
         <PublicRoute>
           <Login />
         </PublicRoute>
+      } />
+      <Route path="/change-password" element={
+        <ProtectedRoute>
+          <ChangePassword />
+        </ProtectedRoute>
+      } />
+      <Route path="/2fa" element={<TwoFAVerify />} />
+      <Route path="/account" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Account />
+          </AuthorizedLayout>
+        </ProtectedRoute>
       } />
       <Route path="/tenants" element={
         <ProtectedRoute>

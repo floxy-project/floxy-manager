@@ -36,6 +36,7 @@ type UsersUseCase interface {
 	SetActiveStatus(ctx context.Context, id domain.UserID, isActive bool) (domain.User, error)
 	Delete(ctx context.Context, id domain.UserID) error
 	UpdatePassword(ctx context.Context, id domain.UserID, oldPassword, newPassword string) error
+	ChangeTemporaryPassword(ctx context.Context, id domain.UserID, newPassword string) error
 	ForgotPassword(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, token, newPassword string) error
 	Setup2FA(ctx context.Context, userID domain.UserID) (secret, qrURL, qrImage string, err error)

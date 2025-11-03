@@ -31,6 +31,7 @@ type Router struct {
 	tenantsHandler   *handlers.TenantsHandler
 	projectsHandler  *handlers.ProjectsHandler
 	workflowsHandler *handlers.WorkflowsHandler
+	usersHandler     *handlers.UsersHandler
 }
 
 func NewRouter(
@@ -39,6 +40,7 @@ func NewRouter(
 	tenantsRepo contract.TenantsRepository,
 	projectsRepo contract.ProjectsRepository,
 	workflowsRepo *workflows.Repository,
+	permissionsService contract.PermissionsService,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -72,11 +74,13 @@ func NewRouter(
 	tenantsHandler := handlers.NewTenantsHandler(tenantsRepo)
 	projectsHandler := handlers.NewProjectsHandler(projectsRepo)
 	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo)
+	usersHandler := handlers.NewUsersHandler(usersService, projectsRepo, permissionsService)
 
 	router.POST("/api/v1/auth/login", wrapHandler(authHandler.Login))
 	router.POST("/api/v1/auth/refresh", wrapHandler(authHandler.Refresh))
 	router.POST("/api/v1/auth/forgot-password", wrapHandler(passwordHandler.ForgotPassword))
 	router.POST("/api/v1/auth/reset-password", wrapHandler(passwordHandler.ResetPassword))
+	router.POST("/api/v1/auth/change-password", wrapHandler(passwordHandler.ChangePassword))
 
 	router.GET("/api/v1/auth/sso/providers", wrapHandler(ssoHandler.GetProviders))
 	router.POST("/api/v1/auth/sso/initiate", wrapHandler(ssoHandler.Initiate))
@@ -92,6 +96,11 @@ func NewRouter(
 
 	router.GET("/api/v1/tenants", wrapHandler(tenantsHandler.List))
 	router.GET("/api/v1/projects", wrapHandler(projectsHandler.List))
+
+	// User account endpoints
+	router.GET("/api/v1/users/me", wrapHandler(usersHandler.GetCurrentUser))
+	router.GET("/api/v1/users/me/projects", wrapHandler(usersHandler.GetMyProjects))
+	router.POST("/api/v1/users/me/password", wrapHandler(usersHandler.UpdatePassword))
 
 	// Workflows endpoints
 	router.GET("/api/v1/workflows", wrapHandler(workflowsHandler.ListWorkflows))
@@ -125,6 +134,7 @@ func NewRouter(
 		tenantsHandler:   tenantsHandler,
 		projectsHandler:  projectsHandler,
 		workflowsHandler: workflowsHandler,
+		usersHandler:     usersHandler,
 	}, nil
 }
 
