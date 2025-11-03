@@ -17,7 +17,6 @@ import (
 	"github.com/rom8726/floxy-manager/internal/api/rest/handlers"
 	appcontext "github.com/rom8726/floxy-manager/internal/context"
 	"github.com/rom8726/floxy-manager/internal/contract"
-	"github.com/rom8726/floxy-manager/internal/repository/workflows"
 )
 
 type Router struct {
@@ -39,7 +38,7 @@ func NewRouter(
 	usersService contract.UsersUseCase,
 	tenantsRepo contract.TenantsRepository,
 	projectsRepo contract.ProjectsRepository,
-	workflowsRepo *workflows.Repository,
+	workflowsRepo contract.WorkflowsRepository,
 	permissionsService contract.PermissionsService,
 	rolesRepo contract.RolesRepository,
 	membershipsRepo contract.MembershipsRepository,

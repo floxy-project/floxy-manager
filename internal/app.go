@@ -241,39 +241,10 @@ func (app *App) newAPIServer() (*httpserver.Server, error) {
 		return nil, fmt.Errorf("resolve users service component: %w", err)
 	}
 
-	var permService contract.PermissionsService
-	if err := app.container.Resolve(&permService); err != nil {
-		return nil, fmt.Errorf("resolve permissions service component: %w", err)
-	}
-
-	var tenantsRepo contract.TenantsRepository
-	if err := app.container.Resolve(&tenantsRepo); err != nil {
-		return nil, fmt.Errorf("resolve tenants repository component: %w", err)
-	}
-
-	var projectsRepo contract.ProjectsRepository
-	if err := app.container.Resolve(&projectsRepo); err != nil {
-		return nil, fmt.Errorf("resolve projects repository component: %w", err)
-	}
-
-	var workflowsRepo *workflows.Repository
-	if err := app.container.Resolve(&workflowsRepo); err != nil {
-		return nil, fmt.Errorf("resolve workflows repository component: %w", err)
-	}
-
-	var rolesRepo contract.RolesRepository
-	if err := app.container.Resolve(&rolesRepo); err != nil {
-		return nil, fmt.Errorf("resolve roles repository component: %w", err)
-	}
-
-	var membershipsRepo contract.MembershipsRepository
-	if err := app.container.Resolve(&membershipsRepo); err != nil {
-		return nil, fmt.Errorf("resolve memberships repository component: %w", err)
-	}
-
-	apiRouter, err := rest.NewRouter(app.PostgresPool, usersSrv, tenantsRepo, projectsRepo, workflowsRepo, permService, rolesRepo, membershipsRepo)
-	if err != nil {
-		return nil, fmt.Errorf("create API router: %w", err)
+	app.registerComponent(rest.NewRouter).Arg(app.PostgresPool)
+	var apiRouter *rest.Router
+	if err := app.container.Resolve(&apiRouter); err != nil {
+		return nil, fmt.Errorf("resolve api router component: %w", err)
 	}
 
 	handler := pkgmiddlewares.CORSMdw(

@@ -8,15 +8,15 @@ import (
 	"strconv"
 
 	appcontext "github.com/rom8726/floxy-manager/internal/context"
+	"github.com/rom8726/floxy-manager/internal/contract"
 	"github.com/rom8726/floxy-manager/internal/domain"
-	"github.com/rom8726/floxy-manager/internal/repository/workflows"
 )
 
 type WorkflowsHandler struct {
-	workflowsRepo *workflows.Repository
+	workflowsRepo contract.WorkflowsRepository
 }
 
-func NewWorkflowsHandler(workflowsRepo *workflows.Repository) *WorkflowsHandler {
+func NewWorkflowsHandler(workflowsRepo contract.WorkflowsRepository) *WorkflowsHandler {
 	return &WorkflowsHandler{
 		workflowsRepo: workflowsRepo,
 	}

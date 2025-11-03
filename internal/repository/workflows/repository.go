@@ -23,7 +23,12 @@ func New(pool *pgxpool.Pool) *Repository {
 }
 
 // ListWorkflowDefinitions returns workflow definitions filtered by tenant_id and project_id
-func (r *Repository) ListWorkflowDefinitions(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.WorkflowDefinition, int, error) {
+func (r *Repository) ListWorkflowDefinitions(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	page, pageSize int,
+) ([]domain.WorkflowDefinition, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -66,7 +71,12 @@ LIMIT $3 OFFSET $4`
 }
 
 // GetWorkflowDefinition returns a workflow definition by ID
-func (r *Repository) GetWorkflowDefinition(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, id string) (domain.WorkflowDefinition, error) {
+func (r *Repository) GetWorkflowDefinition(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	id string,
+) (domain.WorkflowDefinition, error) {
 	executor := r.getExecutor(ctx)
 
 	const query = `
@@ -92,7 +102,13 @@ LIMIT 1`
 }
 
 // ListWorkflowInstances returns workflow instances filtered by tenant_id and project_id
-func (r *Repository) ListWorkflowInstances(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, workflowID string, page, pageSize int) ([]domain.WorkflowInstance, int, error) {
+func (r *Repository) ListWorkflowInstances(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	workflowID string,
+	page, pageSize int,
+) ([]domain.WorkflowInstance, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -156,7 +172,12 @@ LIMIT $3 OFFSET $4`
 }
 
 // GetWorkflowInstance returns a workflow instance by ID
-func (r *Repository) GetWorkflowInstance(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, id int) (domain.WorkflowInstance, error) {
+func (r *Repository) GetWorkflowInstance(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	id int,
+) (domain.WorkflowInstance, error) {
 	executor := r.getExecutor(ctx)
 
 	const query = `
@@ -182,7 +203,13 @@ LIMIT 1`
 }
 
 // ListWorkflowSteps returns workflow steps for an instance
-func (r *Repository) ListWorkflowSteps(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, instanceID int, page, pageSize int) ([]domain.WorkflowStep, int, error) {
+func (r *Repository) ListWorkflowSteps(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	instanceID int,
+	page, pageSize int,
+) ([]domain.WorkflowStep, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -225,7 +252,13 @@ LIMIT $4 OFFSET $5`
 }
 
 // ListWorkflowEvents returns workflow events for an instance
-func (r *Repository) ListWorkflowEvents(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, instanceID int, page, pageSize int) ([]domain.WorkflowEvent, int, error) {
+func (r *Repository) ListWorkflowEvents(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	instanceID int,
+	page, pageSize int,
+) ([]domain.WorkflowEvent, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -268,7 +301,12 @@ LIMIT $4 OFFSET $5`
 }
 
 // ListActiveWorkflows returns active workflows
-func (r *Repository) ListActiveWorkflows(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.ActiveWorkflow, int, error) {
+func (r *Repository) ListActiveWorkflows(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	page, pageSize int,
+) ([]domain.ActiveWorkflow, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -326,7 +364,12 @@ LIMIT $3 OFFSET $4`
 }
 
 // ListWorkflowStats returns workflow statistics
-func (r *Repository) ListWorkflowStats(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.WorkflowStat, int, error) {
+func (r *Repository) ListWorkflowStats(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	page, pageSize int,
+) ([]domain.WorkflowStat, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -370,7 +413,12 @@ LIMIT $3 OFFSET $4`
 }
 
 // ListDLQItems returns DLQ items with pagination
-func (r *Repository) ListDLQItems(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, page, pageSize int) ([]domain.DLQItem, int, error) {
+func (r *Repository) ListDLQItems(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	page, pageSize int,
+) ([]domain.DLQItem, int, error) {
 	executor := r.getExecutor(ctx)
 
 	offset := (page - 1) * pageSize
@@ -413,7 +461,12 @@ LIMIT $3 OFFSET $4`
 }
 
 // GetDLQItem returns a DLQ item by ID
-func (r *Repository) GetDLQItem(ctx context.Context, tenantID domain.TenantID, projectID domain.ProjectID, id int) (domain.DLQItem, error) {
+func (r *Repository) GetDLQItem(
+	ctx context.Context,
+	tenantID domain.TenantID,
+	projectID domain.ProjectID,
+	id int,
+) (domain.DLQItem, error) {
 	executor := r.getExecutor(ctx)
 
 	const query = `
