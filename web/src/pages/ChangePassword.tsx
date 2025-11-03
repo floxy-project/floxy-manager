@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { authFetch } from '../utils/api';
+import { useAuth } from '../auth/AuthContext';
 import logoImage from '../assets/floxy_logo.png';
 
 interface ChangePasswordFormData {
@@ -17,7 +16,7 @@ interface FormErrors {
 
 export const ChangePassword: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, changePassword } = useAuth();
   const [formData, setFormData] = useState<ChangePasswordFormData>({
     newPassword: '',
     confirmPassword: ''
@@ -64,10 +63,13 @@ export const ChangePassword: React.FC = () => {
     setErrors({});
 
     try {
-      const response = await authFetch('/api/v1/auth/change-password', {
+      // For temporary password change, we use a different endpoint
+      // Use apiClient directly for /api/v1/auth/change-password endpoint
+      const response = await fetch('/api/v1/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify({
           new_password: formData.newPassword,
@@ -80,7 +82,7 @@ export const ChangePassword: React.FC = () => {
         setIsLoading(false);
         return;
       }
-
+      
       // Password changed successfully
       // Log out and redirect to login with success message
       logout();

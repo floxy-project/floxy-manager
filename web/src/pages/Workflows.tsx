@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import { useRBAC } from '../auth/permissions';
 
 interface WorkflowDefinition {
   id: string;
@@ -25,6 +26,7 @@ export const Workflows: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
+  const rbac = useRBAC(projectId);
 
   useEffect(() => {
     if (tenantId && projectId) {
@@ -75,6 +77,20 @@ export const Workflows: React.FC = () => {
     );
   }
 
+  // Check if user can view workflows in this project
+  if (!rbac.canViewProject()) {
+    return (
+      <div>
+        <h1>Workflow Definitions</h1>
+        <div className="card">
+          <div className="text-center py-8 text-slate-500 dark:text-[#ff4500]500">
+            <p>You don't have permission to view workflows in this project.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1>Workflow Definitions</h1>
@@ -117,12 +133,16 @@ export const Workflows: React.FC = () => {
                         {new Date(workflow.created_at).toLocaleString()}
                       </td>
                       <td>
-                        <Link 
-                          to={`/tenants/${tenantId}/projects/${projectId}/workflows/${workflow.id}`} 
-                          className="btn btn-primary text-xs py-1.5 px-3"
-                        >
-                          View Details
-                        </Link>
+                        {rbac.canViewProject() ? (
+                          <Link 
+                            to={`/tenants/${tenantId}/projects/${projectId}/workflows/${workflow.id}`} 
+                            className="btn btn-primary text-xs py-1.5 px-3"
+                          >
+                            View Details
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-slate-400">No access</span>
+                        )}
                       </td>
                     </tr>
                   ))}

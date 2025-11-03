@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../auth/AuthContext';
 import logoImage from '../assets/floxy_logo.png';
 
 interface LocationState {
@@ -11,23 +11,31 @@ interface LocationState {
 export const TwoFAVerify: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { verify2FA, hasTmpPassword, isAuthenticated, error: authError, is2FABlocked, sessionId: contextSessionId, is2FARequired } = useAuth();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // Use sessionId from context or location state
+  const sessionId = contextSessionId || (location.state as LocationState | null)?.sessionId || null;
 
   useEffect(() => {
-    const state = location.state as LocationState | null;
-    if (state?.sessionId) {
-      setSessionId(state.sessionId);
-    } else {
-      // If no sessionId, redirect back to login
+    // Redirect to login if 2FA is not required
+    if (!is2FARequired && !sessionId) {
       navigate('/login', { 
         state: { message: 'Please log in first to verify 2FA' } 
       });
     }
-  }, [location, navigate]);
+  }, [is2FARequired, sessionId, navigate]);
+
+  useEffect(() => {
+    // Handle navigation after 2FA verification
+    if (isAuthenticated && hasTmpPassword) {
+      navigate('/change-password');
+    } else if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, hasTmpPassword, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,70 +54,22 @@ export const TwoFAVerify: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/auth/2fa/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: code,
-          session_id: sessionId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Invalid 2FA code' }));
-        setError(errorData.error || 'Invalid 2FA code. Please try again.');
+      if (!sessionId) {
+        setError('Session ID is missing. Please log in again.');
         setIsLoading(false);
+        navigate('/login');
         return;
       }
 
-      const data = await response.json();
-
-      // Get username from location state
-      const state = location.state as LocationState | null;
-      const username = state?.username || 'user';
-
-      // Save refresh token if provided
-      if (data.refresh_token) {
-        localStorage.setItem('refreshToken', data.refresh_token);
-      }
-
-      // Fetch user info to get complete user data
-      let userEmail: string | undefined;
-      try {
-        const userResponse = await fetch('/api/v1/users/me', {
-          headers: {
-            'Authorization': `Bearer ${data.access_token}`,
-          },
-        });
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          userEmail = userData.email;
-          // Check if user has temporary password
-          // If so, we'll handle redirect after login
-        }
-      } catch (err) {
-        console.error('Failed to fetch user info:', err);
-        // Continue with basic user info
-      }
-
-      // Save authentication tokens and user info
-      login(
-        { 
-          username: username,
-          email: userEmail,
-        },
-        data.access_token || ''
-      );
-
-      // Redirect to dashboard
-      // Note: If user has temporary password, they will be redirected from protected routes
-      navigate('/');
-    } catch (error) {
+      await verify2FA(code);
+      // Navigation will be handled by useEffect watching isAuthenticated
+    } catch (error: unknown) {
       console.error('2FA verification error:', error);
-      setError('An error occurred. Please try again later.');
+      if (authError) {
+        setError(authError);
+      } else {
+        setError('Invalid 2FA code. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -149,6 +109,14 @@ export const TwoFAVerify: React.FC = () => {
             </div>
           )}
 
+          {is2FABlocked && (
+            <div className="mb-4 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800/50">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                Too many failed attempts. Please try again in a minute.
+              </p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label 
@@ -170,7 +138,7 @@ export const TwoFAVerify: React.FC = () => {
                 } bg-white dark:bg-[#252526] text-slate-900 dark:text-[#ff6b35] focus:ring-slate-200 dark:focus:ring-[#ff6b35]/20`}
                 placeholder="000000"
                 maxLength={6}
-                disabled={isLoading || !sessionId}
+                disabled={isLoading || is2FABlocked || !sessionId}
                 autoComplete="off"
                 autoFocus
               />
@@ -190,7 +158,7 @@ export const TwoFAVerify: React.FC = () => {
               </button>
               <button
                 type="submit"
-                disabled={isLoading || code.length !== 6 || !sessionId}
+                disabled={isLoading || is2FABlocked || code.length !== 6 || !sessionId}
                 className="flex-1 btn btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (

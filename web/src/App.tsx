@@ -16,7 +16,7 @@ import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { TwoFAVerify } from './pages/TwoFAVerify';
 import { Account } from './pages/Account';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from './auth/AuthContext';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logoImage from '../assets/floxy_logo.png';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../auth/AuthContext';
 import { Breadcrumbs } from './Breadcrumbs';
 
 interface AuthorizedLayoutProps {

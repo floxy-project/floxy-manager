@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authFetch } from '../utils/api';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../auth/AuthContext';
 
 interface UserInfo {
   id: number;

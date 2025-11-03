@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../auth/AuthContext';
 import logoImage from '../assets/floxy_logo.png';
 
 interface LoginFormData {
@@ -17,7 +17,7 @@ interface FormErrors {
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, is2FARequired, hasTmpPassword, error: authError } = useAuth();
   const [formData, setFormData] = useState<LoginFormData>({
     usernameOrEmail: '',
     password: ''
@@ -35,6 +35,25 @@ export const Login: React.FC = () => {
       window.history.replaceState({}, document.title);
     }
   }, [location]);
+
+  useEffect(() => {
+    // Handle navigation after login
+    if (is2FARequired) {
+      navigate('/2fa', { 
+        state: { 
+          username: formData.usernameOrEmail.includes('@') 
+            ? formData.usernameOrEmail.split('@')[0] 
+            : formData.usernameOrEmail
+        } 
+      });
+      return;
+    }
+    
+    if (hasTmpPassword) {
+      navigate('/change-password');
+      return;
+    }
+  }, [is2FARequired, hasTmpPassword, navigate, formData.usernameOrEmail]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,57 +100,16 @@ export const Login: React.FC = () => {
     setErrors({});
 
     try {
-      const response = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username_or_email: formData.usernameOrEmail,
-          password: formData.password,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
-        setErrors({ general: errorData.error || 'Invalid credentials. Please try again.' });
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await response.json();
+      await login(formData.usernameOrEmail, formData.password);
       
-      if (data.requires_2fa) {
-        navigate('/2fa', { 
-          state: { 
-            sessionId: data.session_id,
-            username: formData.usernameOrEmail.includes('@') 
-              ? formData.usernameOrEmail.split('@')[0] 
-              : formData.usernameOrEmail
-          } 
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      login(
-        { 
-          username: formData.usernameOrEmail.includes('@') 
-            ? formData.usernameOrEmail.split('@')[0] 
-            : formData.usernameOrEmail,
-          email: formData.usernameOrEmail.includes('@') ? formData.usernameOrEmail : undefined
-        },
-        data.access_token || ''
-      );
-
-      if (data.is_tmp_password) {
-        navigate('/change-password');
-      } else {
-        navigate('/');
-      }
+      // Navigation will be handled by useEffect watching is2FARequired and hasTmpPassword
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ general: 'An error occurred. Please try again later.' });
+      if (authError) {
+        setErrors({ general: authError });
+      } else {
+        setErrors({ general: 'An error occurred. Please try again later.' });
+      }
     } finally {
       setIsLoading(false);
     }

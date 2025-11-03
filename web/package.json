@@ -26,6 +26,8 @@
     "webpack-dev-server": "^4.15.1"
   },
   "dependencies": {
-    "@tailwindcss/cli": "^4.1.16"
+    "@tailwindcss/cli": "^4.1.16",
+    "axios": "^1.13.1",
+    "jwt-decode": "^4.0.0"
   }
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import { useRBAC } from '../auth/permissions';
 
 interface Project {
   ID: number;
@@ -16,6 +17,7 @@ export const Projects: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const rbac = useRBAC();
 
   useEffect(() => {
     if (tenantId) {
