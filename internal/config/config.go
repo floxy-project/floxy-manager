@@ -71,6 +71,7 @@ type SAMLConfig struct {
 	CertificatePath  string            `default:""      envconfig:"CERTIFICATE_PATH"`
 	PrivateKeyPath   string            `default:""      envconfig:"PRIVATE_KEY_PATH"`
 	IDPMetadataURL   string            `default:""      envconfig:"IDP_METADATA_URL"`
+	SSOURL           string            `default:""      envconfig:"SSO_URL"` // Optional: override SSO URL from metadata
 	AttributeMapping map[string]string `default:""      envconfig:"ATTRIBUTE_MAPPING"`
 	SkipTLSVerify    bool              `default:"false" envconfig:"SKIP_TLS_VERIFY"`
 }

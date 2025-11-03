@@ -58,6 +58,7 @@ function App() {
         </PublicRoute>
       } />
       <Route path="/auth/callback" element={<SSOCallback />} />
+      <Route path="/auth/saml/success" element={<SSOCallback />} />
       <Route path="/change-password" element={
         <ProtectedRoute>
           <ChangePassword />

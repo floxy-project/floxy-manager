@@ -236,9 +236,9 @@ export const Login: React.FC = () => {
             </button>
           </form>
 
-          {hasSSOProviders && (
-            <div className="mt-6">
-              <div className="relative">
+          <div className="mt-6">
+            {hasSSOProviders && (
+              <div className="relative mb-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-300 dark:border-[#3e3e42]"></div>
                 </div>
@@ -246,15 +246,13 @@ export const Login: React.FC = () => {
                   <span className="px-2 bg-white dark:bg-[#1e1e1e] text-slate-500 dark:text-slate-400">Or</span>
                 </div>
               </div>
-              <div className="mt-6">
-                <SSOButton 
-                  fullWidth 
-                  disabled={isLoading} 
-                  onProvidersLoaded={setHasSSOProviders}
-                />
-              </div>
-            </div>
-          )}
+            )}
+            <SSOButton 
+              fullWidth 
+              disabled={isLoading} 
+              onProvidersLoaded={setHasSSOProviders}
+            />
+          </div>
         </div>
       </div>
     </div>

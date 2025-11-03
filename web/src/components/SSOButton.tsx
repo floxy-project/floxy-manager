@@ -41,7 +41,8 @@ const SSOButton: React.FC<SSOButtonProps> = ({
     };
 
     fetchProviders();
-  }, [onProvidersLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSSOInitiate = async (providerName: string) => {
     setInitiatingSSO(true);

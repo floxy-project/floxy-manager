@@ -54,15 +54,25 @@ func NewAuthService(service *Service) *AuthService {
 
 // Authenticate authenticates a user against the LDAP server.
 func (s *AuthService) Authenticate(ctx context.Context, username, password string) (*domain.User, error) {
-	if s.service == nil || !s.service.isEnabled() {
-		return nil, errors.New("LDAP service is not configured or enabled")
+	if s.service == nil {
+		return nil, errors.New("LDAP service is not configured")
 	}
 
 	// Remove domain from username if present
 	username = strings.Split(username, "@")[0]
 
+	// Authenticate will reload config and check if enabled internally
 	authenticated, err := s.service.Authenticate(ctx, username, password)
 	if err != nil {
+		// Check if LDAP is disabled or not configured - these are expected errors
+		if errors.Is(err, ErrLDAPDisabled) {
+			// LDAP is disabled, let other providers try
+			return nil, domain.ErrInvalidPassword
+		}
+		if errors.Is(err, ErrLDAPNotConfigured) {
+			// LDAP is not configured, let other providers try
+			return nil, domain.ErrInvalidPassword
+		}
 		return nil, fmt.Errorf("LDAP authentication failed: %w", err)
 	}
 
@@ -86,8 +96,17 @@ func (s *AuthService) Authenticate(ctx context.Context, username, password strin
 
 // CanHandle returns true if the username matches the LDAP username pattern.
 func (s *AuthService) CanHandle(username string) bool {
-	// If LDAP is not configured, we can't handle any authentication
-	if s.service == nil || !s.service.isEnabled() {
+	// If LDAP service is nil, we can't handle any authentication
+	if s.service == nil {
+		return false
+	}
+
+	// Check if enabled - use RLock for thread safety
+	s.service.mu.RLock()
+	enabled := s.service.enabled
+	s.service.mu.RUnlock()
+
+	if !enabled {
 		return false
 	}
 

@@ -24,6 +24,7 @@ type SAMLConfig struct {
 	CertificatePath  string            `json:"certificate_path"`
 	PrivateKeyPath   string            `json:"private_key_path"`
 	IDPMetadataURL   string            `json:"idp_metadata_url"`
+	SSOURL           string            `json:"sso_url"` // Optional: override SSO URL from metadata
 	AttributeMapping map[string]string `json:"attribute_mapping"`
 	CallbackURL      string            `json:"callback_url"`
 	PublicRootURL    string            `json:"public_root_url"`

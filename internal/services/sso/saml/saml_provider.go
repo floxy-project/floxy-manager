@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	metadataPath = "/api/v1/saml/metadata"
-	acsPath      = "/api/v1/saml/acs"
+	metadataPath = "/api/v1/auth/saml/metadata"
+	acsPath      = "/api/v1/auth/saml/acs"
 )
 
 // SAMLProvider implements SSOProvider for SAML.
@@ -197,8 +197,15 @@ func (p *SAMLProvider) GenerateAuthURL(state string) (string, error) {
 		return "", fmt.Errorf("SAML provider '%s' is not enabled", p.name)
 	}
 
+	ssoBindingLocation := p.sp.GetSSOBindingLocation(saml.HTTPRedirectBinding)
+	slog.Debug("Generating SAML auth URL",
+		"provider", p.name,
+		"sso_binding_location", ssoBindingLocation,
+		"state", state,
+	)
+
 	authReq, err := p.sp.MakeAuthenticationRequest(
-		p.sp.GetSSOBindingLocation(saml.HTTPRedirectBinding),
+		ssoBindingLocation,
 		saml.HTTPRedirectBinding,
 		saml.HTTPPostBinding,
 	)
@@ -206,12 +213,25 @@ func (p *SAMLProvider) GenerateAuthURL(state string) (string, error) {
 		return "", fmt.Errorf("create authentication request: %w", err)
 	}
 
+	// Log Destination attribute for debugging
+	slog.Debug("SAML AuthnRequest created",
+		"provider", p.name,
+		"request_id", authReq.ID,
+		"destination", authReq.Destination,
+		"sso_binding_location", ssoBindingLocation,
+	)
+
 	p.requestIDs.Store(state, authReq.ID)
 
 	redirectURL, err := authReq.Redirect(state, p.sp)
 	if err != nil {
 		return "", fmt.Errorf("create redirect to IDP: %w", err)
 	}
+
+	slog.Debug("SAML redirect URL generated",
+		"provider", p.name,
+		"redirect_url", redirectURL.String(),
+	)
 
 	return redirectURL.String(), nil
 }
@@ -225,8 +245,21 @@ func (p *SAMLProvider) Authenticate(
 		return nil, fmt.Errorf("SAML provider '%s' is not enabled", p.name)
 	}
 
+	slog.Info("SAML Authenticate called",
+		"provider", p.name,
+		"state", state,
+		"method", req.Method,
+		"url", req.URL.String(),
+	)
+
+	// Try to find request ID by state
 	id, ok := p.requestIDs.LoadAndDelete(state)
 	if !ok {
+		// Log all stored states for debugging
+		slog.Warn("SAML state not found in requestIDs",
+			"state", state,
+			"available_states_count", countSyncMap(&p.requestIDs),
+		)
 		return nil, fmt.Errorf("invalid state: %s", state)
 	}
 
@@ -234,10 +267,48 @@ func (p *SAMLProvider) Authenticate(
 	if !ok {
 		return nil, fmt.Errorf("invalid id type: %T", id)
 	}
+
+	slog.Info("SAML request ID found",
+		"provider", p.name,
+		"state", state,
+		"request_id", idStr,
+	)
+
+	// Log request details before parsing
+	slog.Info("Parsing SAML response",
+		"provider", p.name,
+		"expected_request_id", idStr,
+		"state", state,
+		"request_method", req.Method,
+		"request_url", req.URL.String(),
+		"has_post_form", req.PostForm != nil,
+	)
+
+	if req.PostForm != nil {
+		slog.Info("Request PostForm values",
+			"saml_response_present", req.PostForm.Get("SAMLResponse") != "",
+			"relay_state", req.PostForm.Get("RelayState"),
+		)
+	}
+
+	// Parse SAML response - this validates signature and InResponseTo
 	assertion, err := p.sp.ParseResponse(req, []string{idStr})
 	if err != nil {
-		return nil, fmt.Errorf("invalid SAML response: %w", err)
+		slog.Error("SAML ParseResponse failed",
+			"provider", p.name,
+			"expected_request_id", idStr,
+			"state", state,
+			"error", err,
+			"error_type", fmt.Sprintf("%T", err),
+		)
+		return nil, fmt.Errorf("invalid SAML response: %w. Expected Request ID: %s", err, idStr)
 	}
+
+	slog.Info("SAML response parsed successfully",
+		"provider", p.name,
+		"request_id", idStr,
+		"assertion_id", assertion.ID,
+	)
 
 	username, email := p.extractUserInfoFromAssertion(assertion)
 
@@ -460,9 +531,110 @@ func (p *SAMLProvider) makeSP(ctx context.Context) (*saml.ServiceProvider, error
 		return nil, fmt.Errorf("fetch IDP metadata: %w", err)
 	}
 
+	// Log metadata details for debugging
+	slog.Info("SAML IDP metadata fetched",
+		"idp_metadata_url", p.config.IDPMetadataURL,
+		"idp_entity_id", metadata.EntityID,
+		"idp_sso_descriptors_count", len(metadata.IDPSSODescriptors),
+	)
+
+	// Check if certificates are present in metadata
+	if len(metadata.IDPSSODescriptors) > 0 {
+		descriptor := metadata.IDPSSODescriptors[0]
+		slog.Info("SAML IDP SSO descriptor",
+			"want_authn_requests_signed", descriptor.WantAuthnRequestsSigned,
+			"key_descriptors_count", len(descriptor.KeyDescriptors),
+		)
+		for i, keyDesc := range descriptor.KeyDescriptors {
+			slog.Info("SAML IDP key descriptor",
+				"index", i,
+				"use", keyDesc.Use,
+				"has_certificate", keyDesc.EncryptionMethods != nil,
+			)
+		}
+	}
+
 	serviceProvider.IDPMetadata = metadata
 
+	// Get original SSO URL for logging
+	originalSSOURL := serviceProvider.GetSSOBindingLocation(saml.HTTPRedirectBinding)
+	slog.Debug("SAML SSO binding location",
+		"idp_metadata_url", p.config.IDPMetadataURL, "sso_url_original", originalSSOURL)
+
+	// Override SSO URL if configured
+	if p.config.SSOURL != "" {
+		ssoOverrideURL, err := url.Parse(p.config.SSOURL)
+		if err != nil {
+			slog.Warn("Invalid SSO URL override, using metadata URL",
+				"sso_url", p.config.SSOURL,
+				"error", err,
+			)
+		} else {
+			// Modify IDP metadata to use the override SSO URL
+			// IMPORTANT: We modify metadata.IDPSSODescriptors, but this should not affect certificates
+			// Find and update SSO binding location in metadata
+			found := false
+			for i := range metadata.IDPSSODescriptors {
+				// Verify certificates are still present before modification
+				certCountBefore := len(metadata.IDPSSODescriptors[i].KeyDescriptors)
+				for j := range metadata.IDPSSODescriptors[i].SingleSignOnServices {
+					if metadata.IDPSSODescriptors[i].SingleSignOnServices[j].Binding == saml.HTTPRedirectBinding {
+						oldLocation := metadata.IDPSSODescriptors[i].SingleSignOnServices[j].Location
+						metadata.IDPSSODescriptors[i].SingleSignOnServices[j].Location = ssoOverrideURL.String()
+						slog.Info("SAML SSO URL overridden in metadata",
+							"original_url", oldLocation,
+							"override_url", ssoOverrideURL.String(),
+							"certificates_preserved", certCountBefore > 0,
+						)
+						found = true
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+			if !found {
+				slog.Warn("SAML SSO URL override configured but HTTPRedirectBinding not found in metadata",
+					"sso_url", p.config.SSOURL,
+				)
+			}
+		}
+	}
+
+	// Update service provider with potentially modified metadata
+	// IMPORTANT: Ensure certificates are preserved
+	serviceProvider.IDPMetadata = metadata
+
+	// Verify certificates are still present after metadata update
+	if len(serviceProvider.IDPMetadata.IDPSSODescriptors) > 0 {
+		certCount := len(serviceProvider.IDPMetadata.IDPSSODescriptors[0].KeyDescriptors)
+		slog.Info("SAML metadata updated",
+			"certificates_count", certCount,
+			"certificates_present", certCount > 0,
+		)
+	}
+
+	// Log SSO binding location for debugging - verify it matches override if configured
+	finalSSOURL := serviceProvider.GetSSOBindingLocation(saml.HTTPRedirectBinding)
+	slog.Debug("SAML SSO binding location loaded",
+		"idp_metadata_url", p.config.IDPMetadataURL,
+		"sso_url", finalSSOURL,
+		"sso_url_override_configured", p.config.SSOURL != "",
+		"destination_will_be", finalSSOURL,
+	)
+
 	return serviceProvider, nil
+}
+
+// countSyncMap counts entries in a sync.Map (for debugging)
+func countSyncMap(m *sync.Map) int {
+	count := 0
+	m.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
 }
 
 func (p *SAMLProvider) generateSAMLKeys(certPath, keyPath string) error {

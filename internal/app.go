@@ -202,6 +202,7 @@ func (app *App) registerComponents() {
 			CertificatePath:  app.Config.SAML.CertificatePath,
 			PrivateKeyPath:   app.Config.SAML.PrivateKeyPath,
 			IDPMetadataURL:   app.Config.SAML.IDPMetadataURL,
+			SSOURL:           app.Config.SAML.SSOURL,
 			AttributeMapping: app.Config.SAML.AttributeMapping,
 			CallbackURL:      path.Join(app.Config.FrontendURL, "/api/v1/auth/sso/callback"),
 			PublicRootURL:    app.Config.FrontendURL,
@@ -241,7 +242,7 @@ func (app *App) newAPIServer() (*httpserver.Server, error) {
 		return nil, fmt.Errorf("resolve users service component: %w", err)
 	}
 
-	app.registerComponent(rest.NewRouter).Arg(app.PostgresPool)
+	app.registerComponent(rest.NewRouter).Arg(app.PostgresPool).Arg(app.Config.FrontendURL)
 	var apiRouter *rest.Router
 	if err := app.container.Resolve(&apiRouter); err != nil {
 		return nil, fmt.Errorf("resolve api router component: %w", err)

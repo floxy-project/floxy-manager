@@ -99,6 +99,7 @@ func New(
 func (s *Service) Authenticate(ctx context.Context, username, password string) (bool, error) {
 	// Reload config before authentication
 	if err := s.reloadConfig(ctx, "authenticate"); err != nil {
+		slog.Warn("LDAP authenticate: failed to reload config", "error", err, "username", username)
 		return false, fmt.Errorf("failed to reload LDAP config: %w", err)
 	}
 
@@ -106,10 +107,12 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 	defer s.mu.RUnlock()
 
 	if !s.isEnabled() {
+		slog.Debug("LDAP authenticate: service is disabled", "username", username)
 		return false, ErrLDAPDisabled
 	}
 
 	if s.client == nil {
+		slog.Warn("LDAP authenticate: client is nil", "username", username, "enabled", s.enabled)
 		return false, ErrLDAPNotConfigured
 	}
 

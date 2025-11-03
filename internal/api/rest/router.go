@@ -49,6 +49,7 @@ func NewRouter(
 	membershipsSrv contract.MembershipsUseCase,
 	ldapUseCase contract.LDAPSyncUseCase,
 	settingsUseCase contract.SettingsUseCase,
+	frontendURL string,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -78,7 +79,7 @@ func NewRouter(
 	authHandler := handlers.NewAuthHandler(usersService)
 	passwordHandler := handlers.NewPasswordHandler(usersService)
 	twoFAHandler := handlers.NewTwoFAHandler(usersService)
-	ssoHandler := handlers.NewSSOHandler(usersService)
+	ssoHandler := handlers.NewSSOHandler(usersService, frontendURL)
 	tenantsHandler := handlers.NewTenantsHandler(tenantsRepo)
 	projectsHandler := handlers.NewProjectsHandler(projectsRepo, permissionsService, rolesRepo, membershipsRepo)
 	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo, permissionsService)
@@ -95,7 +96,8 @@ func NewRouter(
 	router.GET("/api/v1/auth/sso/providers", wrapHandler(ssoHandler.GetProviders))
 	router.POST("/api/v1/auth/sso/initiate", wrapHandler(ssoHandler.Initiate))
 	router.GET("/api/v1/auth/sso/callback", wrapHandler(ssoHandler.Callback))
-	router.GET("/api/v1/auth/sso/metadata", wrapHandler(ssoHandler.GetMetadata))
+	router.GET("/api/v1/auth/saml/metadata", wrapHandler(ssoHandler.GetMetadata))
+	router.POST("/api/v1/auth/saml/acs", wrapHandler(ssoHandler.ACS))
 
 	router.POST("/api/v1/auth/2fa/verify", wrapHandler(twoFAHandler.Verify2FA))
 	router.POST("/api/v1/auth/2fa/setup", wrapHandler(twoFAHandler.Setup2FA))
