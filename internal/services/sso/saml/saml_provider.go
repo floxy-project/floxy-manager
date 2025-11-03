@@ -359,6 +359,8 @@ func (p *SAMLProvider) Authenticate(
 
 // extractUserInfoFromAssertion extracts user information from SAML assertion.
 func (p *SAMLProvider) extractUserInfoFromAssertion(assertion *saml.Assertion) (username, email string) {
+	slog.Debug("Extracting user info from SAML assertion", assertion.AttributeStatements)
+
 	collected := p.collectByMapping(assertion)
 
 	username = collected["username"]
