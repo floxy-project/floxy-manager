@@ -205,12 +205,20 @@ const apiClient = {
     return api.post('/api/v1/tenants', data);
   },
 
+  updateTenant: async (id: number, data: { name: string }): Promise<AxiosResponse<Tenant>> => {
+    return api.put(`/api/v1/tenants/${id}`, data);
+  },
+
   deleteTenant: async (id: number): Promise<AxiosResponse<{ message: string }>> => {
     return api.delete(`/api/v1/tenants/${id}`);
   },
 
   createProject: async (data: CreateProjectRequest): Promise<AxiosResponse<Project>> => {
     return api.post('/api/v1/projects', data);
+  },
+
+  updateProject: async (id: number, data: { name: string; description?: string }): Promise<AxiosResponse<Project>> => {
+    return api.put(`/api/v1/projects/${id}`, data);
   },
 
   deleteProject: async (id: number): Promise<AxiosResponse<{ message: string }>> => {

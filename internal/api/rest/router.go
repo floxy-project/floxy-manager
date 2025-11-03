@@ -98,9 +98,11 @@ func NewRouter(
 
 	router.GET("/api/v1/tenants", wrapHandler(tenantsHandler.List))
 	router.POST("/api/v1/tenants", wrapHandler(tenantsHandler.Create))
+	router.PUT("/api/v1/tenants/:id", wrapHandler(tenantsHandler.Update))
 	router.DELETE("/api/v1/tenants/:id", wrapHandler(tenantsHandler.Delete))
 	router.GET("/api/v1/projects", wrapHandler(projectsHandler.List))
 	router.POST("/api/v1/projects", wrapHandler(projectsHandler.Create))
+	router.PUT("/api/v1/projects/:id", wrapHandler(projectsHandler.Update))
 	router.DELETE("/api/v1/projects/:id", wrapHandler(projectsHandler.Delete))
 
 	// User account endpoints

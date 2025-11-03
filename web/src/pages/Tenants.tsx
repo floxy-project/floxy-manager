@@ -18,6 +18,9 @@ export const Tenants: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTenantName, setNewTenantName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -73,6 +76,37 @@ export const Tenants: React.FC = () => {
       setError(errorMessage);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdateTenant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingName.trim() || !editingId) {
+      setError('Tenant name is required');
+      return;
+    }
+
+    setUpdating(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.updateTenant(editingId, { name: editingName.trim() });
+      setTenants(tenants.map(t => 
+        t.ID === editingId 
+          ? {
+              ID: response.data.ID || response.data.id || editingId,
+              Name: response.data.Name || response.data.name || editingName.trim(),
+              CreatedAt: response.data.CreatedAt || response.data.created_at || t.CreatedAt,
+            }
+          : t
+      ));
+      setEditingId(null);
+      setEditingName('');
+      setUpdating(false);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Failed to update tenant';
+      setError(errorMessage);
+      setUpdating(false);
     }
   };
 
@@ -157,20 +191,36 @@ export const Tenants: React.FC = () => {
             }}
           >
             {isSuperuser && (
-              <button
-                onClick={(e) => handleDeleteTenant(tenant.ID, e)}
-                disabled={deletingId === tenant.ID}
-                className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 disabled:opacity-50"
-                title="Delete tenant"
-              >
-                {deletingId === tenant.ID ? (
-                  <div className="w-4 h-4 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
-                ) : (
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingId(tenant.ID);
+                    setEditingName(tenant.Name);
+                    setError(null);
+                  }}
+                  className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 text-blue-600 dark:text-blue-400"
+                  title="Edit tenant"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
-                )}
-              </button>
+                </button>
+                <button
+                  onClick={(e) => handleDeleteTenant(tenant.ID, e)}
+                  disabled={deletingId === tenant.ID}
+                  className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 disabled:opacity-50"
+                  title="Delete tenant"
+                >
+                  {deletingId === tenant.ID ? (
+                    <div className="w-4 h-4 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
+                </button>
+              </div>
             )}
             <div
               onClick={() => handleSelectTenant(tenant.ID)}
@@ -235,6 +285,52 @@ export const Tenants: React.FC = () => {
                   className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creating ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingId !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="card max-w-md w-full bg-white dark:bg-[#1e1e1e]">
+            <h2 className="text-xl font-semibold mb-4">Edit Tenant</h2>
+            <form onSubmit={handleUpdateTenant}>
+              <div className="mb-4">
+                <label htmlFor="editingTenantName" className="block text-sm font-medium mb-2">
+                  Tenant Name
+                </label>
+                <input
+                  type="text"
+                  id="editingTenantName"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-[#3e3e42] focus:border-slate-500 dark:focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-[#ff6b35]/20"
+                  placeholder="Enter tenant name"
+                  autoFocus
+                  disabled={updating}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditingName('');
+                    setError(null);
+                  }}
+                  disabled={updating}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating || !editingName.trim()}
+                  className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updating ? 'Updating...' : 'Update'}
                 </button>
               </div>
             </form>

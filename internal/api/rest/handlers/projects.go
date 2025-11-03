@@ -235,3 +235,80 @@ func (h *ProjectsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, map[string]string{"message": "project deleted successfully"})
 }
+
+func (h *ProjectsHandler) Update(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut && r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !checkAuthAndRespond(w, r) {
+		return
+	}
+
+	// Get project ID from URL params
+	idStr := appcontext.Param(r.Context(), "id")
+	if idStr == "" {
+		respondError(w, http.StatusBadRequest, "project id is required")
+		return
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid project id")
+		return
+	}
+
+	projectID := domain.ProjectID(id)
+
+	// Check if user is superuser or has project.manage permission for this project
+	isSuper := appcontext.IsSuper(r.Context())
+	if !isSuper {
+		// Check if user has project.manage permission for this project
+		hasManage, err := h.permissionsSrv.HasProjectPermission(r.Context(), projectID, domain.PermProjectManage)
+		if err != nil || !hasManage {
+			respondError(w, http.StatusForbidden, "Only superusers or project owners can update projects")
+			return
+		}
+	}
+
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		respondError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	err = h.projectsRepo.Update(r.Context(), projectID, req.Name, req.Description)
+	if err != nil {
+		if err == domain.ErrEntityNotFound {
+			respondError(w, http.StatusNotFound, "project not found")
+			return
+		}
+		slog.Error("Failed to update project",
+			"error", err,
+			"project_id", id,
+			"name", req.Name,
+		)
+		respondError(w, http.StatusInternalServerError, "Failed to update project")
+		return
+	}
+
+	// Get updated project to return
+	project, err := h.projectsRepo.GetByID(r.Context(), projectID)
+	if err != nil {
+		slog.Error("Failed to get updated project", "error", err, "project_id", projectID)
+		respondError(w, http.StatusInternalServerError, "Failed to retrieve updated project")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, project)
+}

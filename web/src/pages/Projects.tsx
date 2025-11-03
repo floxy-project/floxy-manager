@@ -22,6 +22,10 @@ export const Projects: React.FC = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingDescription, setEditingDescription] = useState('');
+  const [updating, setUpdating] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const navigate = useNavigate();
   const rbac = useRBAC();
@@ -93,6 +97,44 @@ export const Projects: React.FC = () => {
       setError(errorMessage);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingName.trim() || !editingId) {
+      setError('Project name is required');
+      return;
+    }
+
+    setUpdating(true);
+    setError(null);
+
+    try {
+      const response = await apiClient.updateProject(editingId, {
+        name: editingName.trim(),
+        description: editingDescription.trim() || undefined,
+      });
+      
+      setProjects(projects.map(p => 
+        p.ID === editingId 
+          ? {
+              ID: response.data.ID || response.data.id || editingId,
+              Name: response.data.Name || response.data.name || editingName.trim(),
+              Description: response.data.Description || response.data.description || editingDescription.trim(),
+              CreatedAt: response.data.CreatedAt || response.data.created_at || p.CreatedAt,
+              UpdatedAt: response.data.UpdatedAt || response.data.updated_at || new Date().toISOString(),
+            }
+          : p
+      ));
+      setEditingId(null);
+      setEditingName('');
+      setEditingDescription('');
+      setUpdating(false);
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Failed to update project';
+      setError(errorMessage);
+      setUpdating(false);
     }
   };
 
@@ -175,6 +217,7 @@ export const Projects: React.FC = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {projects.map((project) => {
+          const canManage = isSuperuser || rbac.canManageProject(project.ID);
           const canDelete = isSuperuser || rbac.canDeleteProject(project.ID);
           return (
             <div
@@ -187,21 +230,40 @@ export const Projects: React.FC = () => {
                 border: '1px solid rgba(255, 255, 255, 0.5)',
               }}
             >
-              {canDelete && (
-                <button
-                  onClick={(e) => handleDeleteProject(project.ID, e)}
-                  disabled={deletingId === project.ID}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 disabled:opacity-50"
-                  title="Delete project"
-                >
-                  {deletingId === project.ID ? (
-                    <div className="w-4 h-4 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+              {canManage && (
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingId(project.ID);
+                        setEditingName(project.Name);
+                        setEditingDescription(project.Description || '');
+                        setError(null);
+                      }}
+                      className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50 text-blue-600 dark:text-blue-400"
+                      title="Edit project"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  {canDelete && (
+                    <button
+                      onClick={(e) => handleDeleteProject(project.ID, e)}
+                      disabled={deletingId === project.ID}
+                      className="p-1.5 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 text-red-600 dark:text-red-400 disabled:opacity-50"
+                      title="Delete project"
+                    >
+                      {deletingId === project.ID ? (
+                        <div className="w-4 h-4 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
+                    </button>
                   )}
-                </button>
+                </div>
               )}
               <div
                 onClick={() => handleSelectProject(project.ID)}
@@ -288,6 +350,68 @@ export const Projects: React.FC = () => {
                   className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {creating ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingId !== null && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="card max-w-md w-full bg-white dark:bg-[#1e1e1e]">
+            <h2 className="text-xl font-semibold mb-4">Edit Project</h2>
+            <form onSubmit={handleUpdateProject}>
+              <div className="mb-4">
+                <label htmlFor="editingProjectName" className="block text-sm font-medium mb-2">
+                  Project Name *
+                </label>
+                <input
+                  type="text"
+                  id="editingProjectName"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-[#3e3e42] focus:border-slate-500 dark:focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-[#ff6b35]/20"
+                  placeholder="Enter project name"
+                  autoFocus
+                  disabled={updating}
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="editingProjectDescription" className="block text-sm font-medium mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  id="editingProjectDescription"
+                  value={editingDescription}
+                  onChange={(e) => setEditingDescription(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-[#3e3e42] focus:border-slate-500 dark:focus:border-[#ff6b35] focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-[#ff6b35]/20"
+                  placeholder="Enter project description"
+                  rows={3}
+                  disabled={updating}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setEditingName('');
+                    setEditingDescription('');
+                    setError(null);
+                  }}
+                  disabled={updating}
+                  className="flex-1 btn btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating || !editingName.trim()}
+                  className="flex-1 btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {updating ? 'Updating...' : 'Update'}
                 </button>
               </div>
             </form>

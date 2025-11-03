@@ -90,6 +90,28 @@ func (r *Repository) Create(ctx context.Context, name string) (domain.Tenant, er
 	return model.toDomain(), nil
 }
 
+func (r *Repository) Update(ctx context.Context, id domain.TenantID, name string) (domain.Tenant, error) {
+	executor := r.getExecutor(ctx)
+
+	const query = `UPDATE workflows_manager.tenants SET name = $1 WHERE id = $2 RETURNING *`
+
+	rows, err := executor.Query(ctx, query, name, id.Int())
+	if err != nil {
+		return domain.Tenant{}, fmt.Errorf("update tenant: %w", err)
+	}
+	defer rows.Close()
+
+	model, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[tenantModel])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Tenant{}, domain.ErrEntityNotFound
+		}
+		return domain.Tenant{}, fmt.Errorf("collect tenant: %w", err)
+	}
+
+	return model.toDomain(), nil
+}
+
 func (r *Repository) Delete(ctx context.Context, id domain.TenantID) error {
 	executor := r.getExecutor(ctx)
 
