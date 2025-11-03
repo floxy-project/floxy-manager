@@ -163,7 +163,6 @@ create index if not exists idx_memberships_project_id on workflows.memberships (
 create index if not exists idx_memberships_user_id on workflows.memberships (user_id);
 create index if not exists idx_memberships_role_id on workflows.memberships (role_id);
 
-
 create or replace function workflows.normalize_key() returns trigger
     language plpgsql as
 $$
@@ -221,7 +220,7 @@ values ('c80633be-e36b-4fb8-8d5d-f4b05c449d37', 'b0ca1ed0-07aa-4fa2-a843-8253799
        ('c80633be-e36b-4fb8-8d5d-f4b05c449d37', 'bb1bc5da-fbe2-4b7d-8088-9ff7642034ce')
 on conflict (role_id, permission_id) do nothing;
 
-insert into workflows.tenants (name, created_at) values ('default', now()) on conflict (name) do nothing;
+insert into workflows.tenants (name, created_at) values ('Tenant 1', now()) on conflict (name) do nothing;
 
 create table if not exists workflows.membership_audit
 (
