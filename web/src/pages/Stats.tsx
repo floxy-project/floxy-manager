@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { authFetch } from '../utils/api';
 
 interface WorkflowStats {
-    workflow_name: string;
+    name: string;
     version: number;
     total_instances: number;
     completed_instances: number;
@@ -10,29 +12,46 @@ interface WorkflowStats {
     average_duration: number;
 }
 
+interface StatsResponse {
+    items: WorkflowStats[];
+    page: number;
+    page_size: number;
+    total: number;
+}
+
 export const Stats: React.FC = () => {
+    const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
     const [stats, setStats] = useState<WorkflowStats[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(20);
+    const [totalItems, setTotalItems] = useState(0);
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await fetch('/api/stats');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch stats');
-                }
-                const data = await response.json();
-                setStats(data);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Unknown error');
-            } finally {
-                setLoading(false);
-            }
-        };
+        if (tenantId && projectId) {
+            fetchStats();
+        }
+    }, [tenantId, projectId, currentPage]);
 
-        fetchStats();
-    }, []);
+    const fetchStats = async () => {
+        try {
+            setLoading(true);
+            const response = await authFetch(`/api/v1/stats?tenant_id=${tenantId}&project_id=${projectId}&page=${currentPage}&page_size=${pageSize}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch stats');
+            }
+            const data: StatsResponse = await response.json();
+            setStats(data.items || data);
+            setTotalItems(data.total || data.items?.length || 0);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Unknown error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const totalPages = Math.ceil(totalItems / pageSize);
 
     const formatDuration = (nanoseconds: number) => {
         if (nanoseconds === 0 || nanoseconds === null) return '-';
@@ -132,8 +151,8 @@ export const Stats: React.FC = () => {
                             {stats.map((stat) => {
                                 const successRate = parseFloat(getSuccessRate(stat.completed_instances, stat.total_instances));
                                 return (
-                                    <tr key={`${stat.workflow_name}-${stat.version}`}>
-                                        <td className="font-medium">{stat.workflow_name}</td>
+                                    <tr key={`${stat.name}-${stat.version}`}>
+                                        <td className="font-medium">{stat.name}</td>
                                         <td>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-[#3e3e42] text-slate-700 dark:text-[#ff4500]400">
                                                 v{stat.version}
@@ -162,6 +181,43 @@ export const Stats: React.FC = () => {
                             })}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-4 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <button
+                            className="btn btn-outline"
+                            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Previous
+                        </button>
+                        <div className="px-4 py-2 rounded-lg" style={{
+                            background: 'rgba(255, 255, 255, 0.5)',
+                            backdropFilter: 'blur(12px) saturate(150%)',
+                            WebkitBackdropFilter: 'blur(12px) saturate(150%)',
+                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)'
+                        }}>
+                            <span className="text-sm font-medium text-slate-700 dark:text-[#ff4500]400">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                        </div>
+                        <button
+                            className="btn btn-outline"
+                            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
                     </div>
                 )}
             </div>

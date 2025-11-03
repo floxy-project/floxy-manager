@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { CleanupModal } from '../components/CleanupModal';
+import { authFetch } from '../utils/api';
+import { useRBAC } from '../auth/permissions';
 
 interface SummaryStats {
   total_workflows: number;
@@ -12,7 +14,7 @@ interface SummaryStats {
 }
 
 interface ActiveWorkflow {
-  id: number;
+  instance_id: number;
   workflow_id: string;
   workflow_name: string;
   status: string;
@@ -25,38 +27,62 @@ interface ActiveWorkflow {
 }
 
 export const Dashboard: React.FC = () => {
+  const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const [summary, setSummary] = useState<SummaryStats | null>(null);
+  const rbac = useRBAC(projectId);
   const [activeWorkflows, setActiveWorkflows] = useState<ActiveWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [summaryRes, activeRes] = await Promise.all([
-          fetch('/api/stats/summary'),
-          fetch('/api/instances/active')
-        ]);
+    if (tenantId && projectId) {
+      fetchData();
+    }
+  }, [tenantId, projectId]);
+
+  const fetchData = async () => {
+    try {
+      const [summaryRes, activeRes] = await Promise.all([
+        authFetch(`/api/v1/stats?tenant_id=${tenantId}&project_id=${projectId}`),
+        authFetch(`/api/v1/active-workflows?tenant_id=${tenantId}&project_id=${projectId}`)
+      ]);
 
         if (!summaryRes.ok || !activeRes.ok) {
           throw new Error('Failed to fetch data');
         }
 
-        const summaryData = await summaryRes.json();
-        const activeData = await activeRes.json();
+        const summaryDataRaw = await summaryRes.json();
+        const activeDataRaw = await activeRes.json();
 
-        setSummary(summaryData);
-        setActiveWorkflows(activeData && Array.isArray(activeData) ? activeData : []);
+        const summaryData = Array.isArray(summaryDataRaw) ? summaryDataRaw : (summaryDataRaw.items || []);
+        const activeData = Array.isArray(activeDataRaw) ? activeDataRaw : (activeDataRaw.items || []);
+
+        const stats = Array.isArray(summaryData) ? summaryData : [];
+        const totalWorkflows = stats.length;
+        const totalInstances = stats.reduce((sum, stat) => sum + (stat.total_instances || 0), 0);
+        const totalCompleted = stats.reduce((sum, stat) => sum + (stat.completed_instances || 0), 0);
+        const totalFailed = stats.reduce((sum, stat) => sum + (stat.failed_instances || 0), 0);
+        const totalRunning = stats.reduce((sum, stat) => sum + (stat.running_instances || 0), 0);
+        const activeWorkflowsList = Array.isArray(activeData) ? activeData : [];
+        const activeWorkflowsCount = activeWorkflowsList.length;
+        
+        setSummary({
+          total_workflows: totalWorkflows,
+          completed_workflows: totalCompleted,
+          failed_workflows: totalFailed,
+          running_workflows: totalRunning,
+          pending_workflows: 0,
+          active_workflows: activeWorkflowsCount,
+        });
+
+        setActiveWorkflows(activeWorkflowsList);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, []);
 
   const handleCleanup = (daysToKeep: number) => {
     window.location.reload();
@@ -133,23 +159,25 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2>Administrative Actions</h2>
+      {rbac.canManageProject() && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h2>Administrative Actions</h2>
+          </div>
+          <p className="text-slate-600 dark:text-[#ff4500]500 mb-4">
+            Manage workflow instances and perform system maintenance tasks.
+          </p>
+          <button
+            className="btn btn-danger"
+            onClick={() => setShowCleanupModal(true)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Cleanup Old Workflows
+          </button>
         </div>
-        <p className="text-slate-600 dark:text-[#ff4500]500 mb-4">
-          Manage workflow instances and perform system maintenance tasks.
-        </p>
-        <button
-          className="btn btn-danger"
-          onClick={() => setShowCleanupModal(true)}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Cleanup Old Workflows
-        </button>
-      </div>
+      )}
 
       <div className="card">
         <h2>Active Workflows</h2>
@@ -178,8 +206,8 @@ export const Dashboard: React.FC = () => {
                 {activeWorkflows.map((workflow) => {
                   const progress = getProgressPercentage(workflow.completed_steps, workflow.total_steps);
                   return (
-                    <tr key={workflow.id}>
-                      <td className="font-mono text-xs">{workflow.id}</td>
+                    <tr key={workflow.instance_id}>
+                      <td className="font-mono text-xs">{workflow.instance_id}</td>
                       <td>
                         <div className="font-medium">{workflow.workflow_name || workflow.workflow_id}</div>
                         <div className="text-xs text-slate-500 dark:text-[#ff4500]500 font-mono mt-0.5">
@@ -211,7 +239,7 @@ export const Dashboard: React.FC = () => {
                         <span className="text-slate-600 dark:text-[#ff4500]500">{workflow.total_steps}</span>
                       </td>
                       <td>
-                        <Link to={`/instances/${workflow.id}`} className="btn btn-primary text-xs py-1.5 px-3">
+                        <Link to={`/tenants/${tenantId}/projects/${projectId}/instances/${workflow.instance_id}`} className="btn btn-primary text-xs py-1.5 px-3">
                           View
                         </Link>
                       </td>
@@ -228,6 +256,7 @@ export const Dashboard: React.FC = () => {
         isOpen={showCleanupModal}
         onClose={() => setShowCleanupModal(false)}
         onCleanup={handleCleanup}
+        projectId={projectId || ''}
       />
     </div>
   );

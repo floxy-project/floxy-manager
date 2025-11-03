@@ -1,0 +1,73 @@
+package contract
+
+import (
+	"context"
+
+	"github.com/rom8726/floxy-manager/internal/domain"
+)
+
+type WorkflowsRepository interface {
+	ListWorkflowDefinitions(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		page, pageSize int,
+	) ([]domain.WorkflowDefinition, int, error)
+	GetWorkflowDefinition(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		id string,
+	) (domain.WorkflowDefinition, error)
+	ListWorkflowInstances(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		workflowID string,
+		page, pageSize int,
+	) ([]domain.WorkflowInstance, int, error)
+	GetWorkflowInstance(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		id int,
+	) (domain.WorkflowInstance, error)
+	ListWorkflowSteps(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		instanceID int,
+		page, pageSize int,
+	) ([]domain.WorkflowStep, int, error)
+	ListWorkflowEvents(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		instanceID int,
+		page, pageSize int,
+	) ([]domain.WorkflowEvent, int, error)
+	ListActiveWorkflows(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		page, pageSize int,
+	) ([]domain.ActiveWorkflow, int, error)
+	ListWorkflowStats(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		page, pageSize int,
+	) ([]domain.WorkflowStat, int, error)
+	ListDLQItems(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		page, pageSize int,
+	) ([]domain.DLQItem, int, error)
+	GetDLQItem(
+		ctx context.Context,
+		tenantID domain.TenantID,
+		projectID domain.ProjectID,
+		id int,
+	) (domain.DLQItem, error)
+}

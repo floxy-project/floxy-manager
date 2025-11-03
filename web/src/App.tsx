@@ -1,6 +1,9 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from './components/Layout';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthorizedLayout } from './components/AuthorizedLayout';
+import { TenantProjectLayout } from './components/TenantProjectLayout';
+import { Tenants } from './pages/Tenants';
+import { Projects } from './pages/Projects';
 import { Dashboard } from './pages/Dashboard';
 import { Workflows } from './pages/Workflows';
 import { WorkflowDetail } from './pages/WorkflowDetail';
@@ -10,14 +13,25 @@ import { Stats } from './pages/Stats';
 import { DLQ } from './pages/DLQ';
 import { DLQDetail } from './pages/DLQDetail';
 import { Login } from './pages/Login';
-import { useAuth } from './hooks/useAuth';
+import { ChangePassword } from './pages/ChangePassword';
+import { TwoFAVerify } from './pages/TwoFAVerify';
+import { Account } from './pages/Account';
+import { Admin } from './pages/Admin';
+import { Memberships } from './pages/Memberships';
+import { useAuth } from './auth/AuthContext';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasTmpPassword } = useAuth();
+  const location = useLocation();
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect to change password page if user has temporary password and is not already on that page
+  if (hasTmpPassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
   
   return <>{children}</>;
@@ -42,20 +56,61 @@ function App() {
           <Login />
         </PublicRoute>
       } />
-      <Route path="/*" element={
+      <Route path="/change-password" element={
         <ProtectedRoute>
-          <Layout>
+          <ChangePassword />
+        </ProtectedRoute>
+      } />
+      <Route path="/2fa" element={<TwoFAVerify />} />
+      <Route path="/account" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Account />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Admin />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/tenants" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Tenants />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/tenants/:tenantId/projects" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Projects />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/tenants/:tenantId/projects/:projectId/*" element={
+        <ProtectedRoute>
+          <TenantProjectLayout>
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/workflows" element={<Workflows />} />
-              <Route path="/workflows/:id" element={<WorkflowDetail />} />
-              <Route path="/instances" element={<Instances />} />
-              <Route path="/instances/:id" element={<InstanceDetail />} />
-              <Route path="/stats" element={<Stats />} />
-              <Route path="/dlq" element={<DLQ />} />
-              <Route path="/dlq/:id" element={<DLQDetail />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="workflows" element={<Workflows />} />
+              <Route path="workflows/:id" element={<WorkflowDetail />} />
+              <Route path="instances" element={<Instances />} />
+              <Route path="instances/:id" element={<InstanceDetail />} />
+              <Route path="stats" element={<Stats />} />
+              <Route path="dlq" element={<DLQ />} />
+              <Route path="dlq/:id" element={<DLQDetail />} />
+              <Route path="memberships" element={<Memberships />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
-          </Layout>
+          </TenantProjectLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Navigate to="/tenants" replace />
         </ProtectedRoute>
       } />
     </Routes>

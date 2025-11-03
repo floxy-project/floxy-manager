@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import logoImage from '../assets/floxy_logo.png';
 
 interface LoginFormData {
@@ -16,13 +16,44 @@ interface FormErrors {
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, is2FARequired, hasTmpPassword, error: authError } = useAuth();
   const [formData, setFormData] = useState<LoginFormData>({
     usernameOrEmail: '',
     password: ''
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for success message from location state
+    const state = location.state as { message?: string } | null;
+    if (state?.message) {
+      setSuccessMessage(state.message);
+      // Clear the state to avoid showing message on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    // Handle navigation after login
+    if (is2FARequired) {
+      navigate('/2fa', { 
+        state: { 
+          username: formData.usernameOrEmail.includes('@') 
+            ? formData.usernameOrEmail.split('@')[0] 
+            : formData.usernameOrEmail
+        } 
+      });
+      return;
+    }
+    
+    if (hasTmpPassword) {
+      navigate('/change-password');
+      return;
+    }
+  }, [is2FARequired, hasTmpPassword, navigate, formData.usernameOrEmail]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,43 +100,16 @@ export const Login: React.FC = () => {
     setErrors({});
 
     try {
-      // Mock API call - заглушка
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username_or_email: formData.usernameOrEmail,
-          password: formData.password,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
-        setErrors({ general: errorData.message || 'Invalid credentials. Please try again.' });
-        setIsLoading(false);
-        return;
-      }
-
-      const data = await response.json();
+      await login(formData.usernameOrEmail, formData.password);
       
-      // Update auth state using the hook
-      login(
-        data.user || { 
-          username: formData.usernameOrEmail.includes('@') 
-            ? formData.usernameOrEmail.split('@')[0] 
-            : formData.usernameOrEmail,
-          email: formData.usernameOrEmail.includes('@') ? formData.usernameOrEmail : undefined
-        },
-        data.token || 'mock-token'
-      );
-
-      // Redirect to dashboard
-      navigate('/');
+      // Navigation will be handled by useEffect watching is2FARequired and hasTmpPassword
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ general: 'An error occurred. Please try again later.' });
+      if (authError) {
+        setErrors({ general: authError });
+      } else {
+        setErrors({ general: 'An error occurred. Please try again later.' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -139,11 +143,17 @@ export const Login: React.FC = () => {
                 className="h-16 w-auto object-contain"
               />
             </div>
-            <h1 className="text-3xl font-bold mb-2 text-slate-600" >Log In</h1>
+            <h1 className="text-2xl font-bold mb-2 text-slate-600" >Log In</h1>
             <p className="text-slate-600 dark:text-[#ff4500]">
               Enter your credentials to access Floxy Manager
             </p>
           </div>
+
+          {successMessage && (
+            <div className="mb-4 p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50">
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">{successMessage}</p>
+            </div>
+          )}
 
           {errors.general && (
             <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50">

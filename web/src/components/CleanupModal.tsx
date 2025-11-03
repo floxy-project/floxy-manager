@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Modal } from './Modal';
+import { authFetch } from '../utils/api';
 
 interface CleanupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCleanup: (daysToKeep: number) => void;
+  projectId: string; // used to include X-Project-ID for RBAC middleware
 }
 
 export const CleanupModal: React.FC<CleanupModalProps> = ({
   isOpen,
   onClose,
-  onCleanup
+  onCleanup,
+  projectId,
 }) => {
   const [daysToKeep, setDaysToKeep] = useState(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,10 +23,11 @@ export const CleanupModal: React.FC<CleanupModalProps> = ({
     
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/cleanup', {
+      const response = await authFetch('/api/cleanup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Project-ID': String(projectId),
         },
         body: JSON.stringify({ days_to_keep: daysToKeep }),
       });
