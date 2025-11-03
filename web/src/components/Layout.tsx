@@ -13,7 +13,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuth();
   const headerRef = useRef<HTMLElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(49); // Default fallback
+  const [headerHeight, setHeaderHeight] = useState(36); // Default fallback
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -96,7 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Top bar - header */}
       <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-slate-200/50 dark:border-slate-700/50">
         <div className="container">
-          <div className="flex items-center justify-between h-12">
+          <div className="flex items-center justify-between h-9">
             <div className="flex items-center gap-3">
               {/* Mobile menu button */}
               <button 
@@ -127,7 +127,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <img 
                   src={logoImage} 
                   alt="Floxy Manager" 
-                  className="h-12 w-auto object-contain"
+                  className="h-9 w-auto object-contain"
                 />
               </div>
             </div>

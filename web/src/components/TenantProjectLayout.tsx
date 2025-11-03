@@ -14,7 +14,7 @@ export const TenantProjectLayout: React.FC<TenantProjectLayoutProps> = ({ childr
   const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const { isAuthenticated, user, logout } = useAuth();
   const headerRef = useRef<HTMLElement>(null);
-  const [headerHeight, setHeaderHeight] = useState(49);
+  const [headerHeight, setHeaderHeight] = useState(36);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -94,7 +94,7 @@ export const TenantProjectLayout: React.FC<TenantProjectLayoutProps> = ({ childr
     <div className="min-h-screen flex flex-col">
       <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-slate-200/50 dark:border-slate-700/50">
         <div className="container">
-          <div className="flex items-center justify-between h-12">
+          <div className="flex items-center justify-between h-9">
             <div className="flex items-center gap-3">
               <button 
                 className="md:hidden btn btn-outline p-2" 
@@ -123,7 +123,7 @@ export const TenantProjectLayout: React.FC<TenantProjectLayoutProps> = ({ childr
                 <img 
                   src={logoImage} 
                   alt="Floxy Manager" 
-                  className="h-12 w-auto object-contain"
+                  className="h-9 w-auto object-contain"
                 />
               </div>
             </div>
