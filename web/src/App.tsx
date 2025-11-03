@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthorizedLayout } from './components/AuthorizedLayout';
 import { TenantProjectLayout } from './components/TenantProjectLayout';
 import { Tenants } from './pages/Tenants';
@@ -22,10 +22,16 @@ import { useAuth } from './auth/AuthContext';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, hasTmpPassword } = useAuth();
+  const location = useLocation();
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // Redirect to change password page if user has temporary password and is not already on that page
+  if (hasTmpPassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
   
   return <>{children}</>;

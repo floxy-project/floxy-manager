@@ -175,6 +175,18 @@ export const TenantProjectLayout: React.FC<TenantProjectLayoutProps> = ({ childr
                         <div className="py-1">
                           <button
                             onClick={() => {
+                              navigate('/account');
+                              setShowUserMenu(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-[#ff6b35] hover:bg-slate-100 dark:hover:bg-[#2d2d30] transition-colors flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Account
+                          </button>
+                          <button
+                            onClick={() => {
                               logout();
                               setShowUserMenu(false);
                               navigate('/login');

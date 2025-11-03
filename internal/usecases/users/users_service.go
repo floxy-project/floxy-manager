@@ -180,6 +180,7 @@ func (s *UsersService) Create(
 		PasswordHash:  passwordHash,
 		IsSuperuser:   isSuperuser,
 		IsTmpPassword: true,
+		IsExternal:    false,
 	}
 
 	user, err := s.usersRepo.Create(ctx, userDTO)

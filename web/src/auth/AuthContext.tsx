@@ -78,6 +78,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       setUser(userWithPermissions);
+      
+      // Update hasTmpPassword flag based on user data
+      setHasTmpPassword(user.is_tmp_password || false);
     } catch (error) {
       console.error('Failed to fetch user data:', error);
     }
@@ -281,10 +284,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!isAuthenticated) return;
     
     try {
+      // loadUserData already updates hasTmpPassword flag
       await loadUserData();
-      // Update hasTmpPassword based on user data
-      const userData = await apiClient.getCurrentUser();
-      setHasTmpPassword(userData.data.is_tmp_password || false);
     } catch (error) {
       console.error('Failed to fetch user data:', error);
     }
