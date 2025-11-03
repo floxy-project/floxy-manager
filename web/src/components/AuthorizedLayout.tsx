@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logoImage from '../assets/floxy_logo.png';
 import { useAuth } from '../hooks/useAuth';
+import { Breadcrumbs } from './Breadcrumbs';
 
 interface AuthorizedLayoutProps {
   children: React.ReactNode;
@@ -109,6 +110,7 @@ export const AuthorizedLayout: React.FC<AuthorizedLayoutProps> = ({ children }) 
 
       <div className="flex flex-1 min-h-screen" style={{ paddingTop: `${headerHeight}px` }}>
         <main className="flex-1 container py-6 h-full overflow-auto">
+          <Breadcrumbs />
           {children}
         </main>
       </div>

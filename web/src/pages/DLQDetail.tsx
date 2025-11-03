@@ -101,7 +101,7 @@ export const DLQDetail: React.FC = () => {
       if (response.status >= 200 && response.status < 300) {
         alert('Item successfully requeued!');
         // Redirect to DLQ list
-        window.location.href = '/dlq';
+        window.location.href = `/tenants/${tenantId}/projects/${projectId}/dlq`;
       } else {
         // Handle error responses
         let errorMessage = 'Failed to requeue item';

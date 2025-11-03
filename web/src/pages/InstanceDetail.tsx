@@ -385,7 +385,7 @@ export const InstanceDetail: React.FC = () => {
                     <tr key={event.id}>
                       <td>{new Date(event.created_at).toLocaleString()}</td>
                       <td>{event.event_type}</td>
-                      <td>{event.step_id || '-'}</td>
+                      <td>{event.step_id ?? '-'}</td>
                       <td>
                         {event.payload && (
                           <JsonViewer data={event.payload} maxHeight="100px" />

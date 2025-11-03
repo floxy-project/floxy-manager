@@ -6,6 +6,60 @@ import (
 	"time"
 )
 
+// NullInt64 is a nullable int64 that marshals to JSON as null or a number
+type NullInt64 struct {
+	sql.NullInt64
+}
+
+// MarshalJSON implements json.Marshaler interface
+func (n NullInt64) MarshalJSON() ([]byte, error) {
+	if !n.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(n.Int64)
+}
+
+// UnmarshalJSON implements json.Unmarshaler interface
+func (n *NullInt64) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		n.Valid = false
+		return nil
+	}
+	err := json.Unmarshal(data, &n.Int64)
+	if err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
+// NullString is a nullable string that marshals to JSON as null or a string
+type NullString struct {
+	sql.NullString
+}
+
+// MarshalJSON implements json.Marshaler interface
+func (n NullString) MarshalJSON() ([]byte, error) {
+	if !n.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(n.String)
+}
+
+// UnmarshalJSON implements json.Unmarshaler interface
+func (n *NullString) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		n.Valid = false
+		return nil
+	}
+	err := json.Unmarshal(data, &n.String)
+	if err != nil {
+		return err
+	}
+	n.Valid = true
+	return nil
+}
+
 // WorkflowDefinition represents a workflow definition
 type WorkflowDefinition struct {
 	TenantID   TenantID        `json:"tenant_id"`
@@ -48,6 +102,7 @@ type WorkflowStep struct {
 	RetryCount             int             `json:"retry_count"`
 	MaxRetries             int             `json:"max_retries"`
 	CompensationRetryCount int             `json:"compensation_retry_count"`
+	IdempotencyKey         string          `json:"idempotency_key"`
 	StartedAt              sql.NullTime    `json:"started_at,omitempty"`
 	CompletedAt            sql.NullTime    `json:"completed_at,omitempty"`
 	CreatedAt              time.Time       `json:"created_at"`
@@ -59,7 +114,7 @@ type WorkflowEvent struct {
 	ProjectID  ProjectID       `json:"project_id"`
 	ID         int             `json:"id"`
 	InstanceID int             `json:"instance_id"`
-	StepID     sql.NullInt64   `json:"step_id,omitempty"`
+	StepID     NullInt64       `json:"step_id,omitempty"`
 	EventType  string          `json:"event_type"`
 	Payload    json.RawMessage `json:"payload"`
 	CreatedAt  time.Time       `json:"created_at"`
@@ -105,7 +160,7 @@ type DLQItem struct {
 	StepName   string          `json:"step_name"`
 	StepType   string          `json:"step_type"`
 	Input      json.RawMessage `json:"input"`
-	Error      sql.NullString  `json:"error,omitempty"`
+	Error      NullString      `json:"error,omitempty"`
 	Reason     string          `json:"reason"`
 	CreatedAt  time.Time       `json:"created_at"`
 }

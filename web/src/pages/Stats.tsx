@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
 
 interface WorkflowStats {
-    workflow_name: string;
+    name: string;
     version: number;
     total_instances: number;
     completed_instances: number;
@@ -151,8 +151,8 @@ export const Stats: React.FC = () => {
                             {stats.map((stat) => {
                                 const successRate = parseFloat(getSuccessRate(stat.completed_instances, stat.total_instances));
                                 return (
-                                    <tr key={`${stat.workflow_name}-${stat.version}`}>
-                                        <td className="font-medium">{stat.workflow_name}</td>
+                                    <tr key={`${stat.name}-${stat.version}`}>
+                                        <td className="font-medium">{stat.name}</td>
                                         <td>
                                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-[#3e3e42] text-slate-700 dark:text-[#ff4500]400">
                                                 v{stat.version}

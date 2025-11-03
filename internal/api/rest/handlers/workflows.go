@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 
+	appcontext "github.com/rom8726/floxy-manager/internal/context"
 	"github.com/rom8726/floxy-manager/internal/domain"
 	"github.com/rom8726/floxy-manager/internal/repository/workflows"
 )
@@ -117,12 +118,11 @@ func (h *WorkflowsHandler) GetWorkflow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 4 {
+	id := appcontext.Param(r.Context(), "id")
+	if id == "" {
 		respondError(w, http.StatusBadRequest, "Invalid workflow ID")
 		return
 	}
-	id := pathParts[3]
 
 	tenantID, projectID, err := parseTenantAndProject(r)
 	if err != nil {
@@ -137,7 +137,7 @@ func (h *WorkflowsHandler) GetWorkflow(w http.ResponseWriter, r *http.Request) {
 
 	workflow, err := h.workflowsRepo.GetWorkflowDefinition(r.Context(), tenantID, projectID, id)
 	if err != nil {
-		if err == domain.ErrEntityNotFound {
+		if errors.Is(err, domain.ErrEntityNotFound) {
 			slog.Warn("Workflow not found",
 				"workflow_id", id,
 				"tenant_id", tenantID,
@@ -170,12 +170,11 @@ func (h *WorkflowsHandler) ListWorkflowInstances(w http.ResponseWriter, r *http.
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 5 {
+	workflowID := appcontext.Param(r.Context(), "id")
+	if workflowID == "" {
 		respondError(w, http.StatusBadRequest, "Invalid workflow ID")
 		return
 	}
-	workflowID := pathParts[3]
 
 	tenantID, projectID, err := parseTenantAndProject(r)
 	if err != nil {
@@ -311,12 +310,11 @@ func (h *WorkflowsHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 5 {
+	idStr := appcontext.Param(r.Context(), "id")
+	if idStr == "" {
 		respondError(w, http.StatusBadRequest, "Invalid instance ID")
 		return
 	}
-	idStr := pathParts[4]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		slog.Warn("Invalid instance ID",
@@ -340,7 +338,7 @@ func (h *WorkflowsHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 
 	instance, err := h.workflowsRepo.GetWorkflowInstance(r.Context(), tenantID, projectID, id)
 	if err != nil {
-		if err == domain.ErrEntityNotFound {
+		if errors.Is(err, domain.ErrEntityNotFound) {
 			slog.Warn("Instance not found",
 				"instance_id", id,
 				"tenant_id", tenantID,
@@ -373,12 +371,11 @@ func (h *WorkflowsHandler) ListInstanceSteps(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 6 {
+	idStr := appcontext.Param(r.Context(), "id")
+	if idStr == "" {
 		respondError(w, http.StatusBadRequest, "Invalid instance ID")
 		return
 	}
-	idStr := pathParts[4]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		slog.Warn("Invalid instance ID",
@@ -435,12 +432,11 @@ func (h *WorkflowsHandler) ListInstanceEvents(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 6 {
+	idStr := appcontext.Param(r.Context(), "id")
+	if idStr == "" {
 		respondError(w, http.StatusBadRequest, "Invalid instance ID")
 		return
 	}
-	idStr := pathParts[4]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		slog.Warn("Invalid instance ID",
@@ -585,12 +581,11 @@ func (h *WorkflowsHandler) GetDLQItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 4 {
+	idStr := appcontext.Param(r.Context(), "id")
+	if idStr == "" {
 		respondError(w, http.StatusBadRequest, "Invalid DLQ item ID")
 		return
 	}
-	idStr := pathParts[3]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		slog.Warn("Invalid DLQ item ID",
@@ -614,7 +609,7 @@ func (h *WorkflowsHandler) GetDLQItem(w http.ResponseWriter, r *http.Request) {
 
 	item, err := h.workflowsRepo.GetDLQItem(r.Context(), tenantID, projectID, id)
 	if err != nil {
-		if err == domain.ErrEntityNotFound {
+		if errors.Is(err, domain.ErrEntityNotFound) {
 			slog.Warn("DLQ item not found",
 				"dlq_item_id", id,
 				"tenant_id", tenantID,

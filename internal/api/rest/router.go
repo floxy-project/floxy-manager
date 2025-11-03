@@ -15,6 +15,7 @@ import (
 	human_decision "github.com/rom8726/floxy/plugins/api/human-decision"
 
 	"github.com/rom8726/floxy-manager/internal/api/rest/handlers"
+	appcontext "github.com/rom8726/floxy-manager/internal/context"
 	"github.com/rom8726/floxy-manager/internal/contract"
 	"github.com/rom8726/floxy-manager/internal/repository/workflows"
 )
@@ -151,6 +152,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func wrapHandler(fn http.HandlerFunc) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		fn(w, r)
+		ctx := appcontext.WithParams(r.Context(), ps)
+		fn(w, r.WithContext(ctx))
 	}
 }

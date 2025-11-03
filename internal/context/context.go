@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/rom8726/floxy-manager/internal/domain"
 )
 
@@ -17,6 +18,7 @@ const (
 	ctxKeyRawRequest contextKey = "raw_request"
 	ctxKeyRequestID  contextKey = "request_id"
 	ctxKeyUsername   contextKey = "username"
+	ctxKeyParams     contextKey = "httprouter_params"
 )
 
 func WithProjectID(ctx context.Context, id domain.ProjectID) context.Context {
@@ -82,4 +84,22 @@ func Username(ctx context.Context) string {
 	}
 
 	return ""
+}
+
+func WithParams(ctx context.Context, params httprouter.Params) context.Context {
+	return context.WithValue(ctx, ctxKeyParams, params)
+}
+
+func Params(ctx context.Context) httprouter.Params {
+	v, ok := ctx.Value(ctxKeyParams).(httprouter.Params)
+	if !ok {
+		return httprouter.Params{}
+	}
+
+	return v
+}
+
+func Param(ctx context.Context, name string) string {
+	params := Params(ctx)
+	return params.ByName(name)
 }

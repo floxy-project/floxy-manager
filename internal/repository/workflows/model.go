@@ -86,6 +86,7 @@ type workflowStepModel struct {
 	RetryCount             int            `db:"retry_count"`
 	MaxRetries             int            `db:"max_retries"`
 	CompensationRetryCount int            `db:"compensation_retry_count"`
+	IdempotencyKey         string         `db:"idempotency_key"`
 	StartedAt              sql.NullTime   `db:"started_at"`
 	CompletedAt            sql.NullTime   `db:"completed_at"`
 	CreatedAt              time.Time      `db:"created_at"`
@@ -106,6 +107,7 @@ func (m *workflowStepModel) toDomain() domain.WorkflowStep {
 		RetryCount:             m.RetryCount,
 		MaxRetries:             m.MaxRetries,
 		CompensationRetryCount: m.CompensationRetryCount,
+		IdempotencyKey:         m.IdempotencyKey,
 		StartedAt:              m.StartedAt,
 		CompletedAt:            m.CompletedAt,
 		CreatedAt:              m.CreatedAt,
@@ -129,7 +131,7 @@ func (m *workflowEventModel) toDomain() domain.WorkflowEvent {
 		ProjectID:  domain.ProjectID(m.ProjectID),
 		ID:         m.ID,
 		InstanceID: m.InstanceID,
-		StepID:     m.StepID,
+		StepID:     domain.NullInt64{NullInt64: m.StepID},
 		EventType:  m.EventType,
 		Payload:    parseJSONB(m.Payload),
 		CreatedAt:  m.CreatedAt,
@@ -225,7 +227,7 @@ func (m *dlqItemModel) toDomain() domain.DLQItem {
 		StepName:   m.StepName,
 		StepType:   m.StepType,
 		Input:      parseJSONB(m.Input),
-		Error:      m.Error,
+		Error:      domain.NullString{NullString: m.Error},
 		Reason:     m.Reason,
 		CreatedAt:  m.CreatedAt,
 	}

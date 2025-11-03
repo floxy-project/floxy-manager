@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logoImage from '../assets/floxy_logo.png';
 import { useAuth } from '../hooks/useAuth';
+import { Breadcrumbs } from './Breadcrumbs';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -262,6 +263,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           sidebarOpen ? 'ml-64' : 'ml-16'
         }`}>
           <main className="container py-6 h-full overflow-auto">
+            <Breadcrumbs />
             {children}
           </main>
         </div>
