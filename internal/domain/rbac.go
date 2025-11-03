@@ -10,7 +10,7 @@ type Permission struct {
 	Name string
 }
 
-type MembershipID string
+type MembershipID int
 
 type ProjectMembership struct {
 	ID        MembershipID

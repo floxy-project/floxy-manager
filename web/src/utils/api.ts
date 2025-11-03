@@ -224,7 +224,92 @@ const apiClient = {
   deleteProject: async (id: number): Promise<AxiosResponse<{ message: string }>> => {
     return api.delete(`/api/v1/projects/${id}`);
   },
+
+  createUser: async (data: CreateUserRequest): Promise<AxiosResponse<CreateUserResponse>> => {
+    return api.post('/api/v1/users', data);
+  },
+
+  listUsers: async (): Promise<AxiosResponse<UserListItem[]>> => {
+    return api.get('/api/v1/users');
+  },
+
+  updateUserStatus: async (id: number, data: { is_active?: boolean; is_superuser?: boolean }): Promise<AxiosResponse<UserListItem>> => {
+    return api.put(`/api/v1/users/${id}/status`, data);
+  },
+
+  deleteUser: async (id: number): Promise<AxiosResponse<{ message: string }>> => {
+    return api.delete(`/api/v1/users/${id}`);
+  },
+
+  listProjectMemberships: async (projectId: number): Promise<AxiosResponse<Membership[]>> => {
+    return api.get(`/api/v1/projects/${projectId}/memberships`);
+  },
+
+  createProjectMembership: async (projectId: number, data: { user_id: number; role_id: string }): Promise<AxiosResponse<Membership>> => {
+    return api.post(`/api/v1/projects/${projectId}/memberships`, data);
+  },
+
+  deleteProjectMembership: async (projectId: number, membershipId: string): Promise<AxiosResponse<{ message: string }>> => {
+    return api.delete(`/api/v1/projects/${projectId}/memberships/${membershipId}`);
+  },
+
+  listRoles: async (): Promise<AxiosResponse<Role[]>> => {
+    return api.get('/api/v1/roles');
+  },
 };
+
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  password: string;
+  is_superuser: boolean;
+}
+
+export interface CreateUserResponse {
+  id: number;
+  username: string;
+  email: string;
+  is_superuser: boolean;
+  is_active: boolean;
+  is_external: boolean;
+  is_tmp_password: boolean;
+  created_at: string;
+}
+
+export interface UserListItem {
+  id: number;
+  username: string;
+  email: string;
+  is_superuser: boolean;
+  is_active: boolean;
+  is_external: boolean;
+  two_fa_enabled: boolean;
+  two_fa_confirmed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  last_login?: string | null;
+  license_accepted: boolean;
+  is_tmp_password: boolean;
+}
+
+export interface Membership {
+  id: string;
+  project_id: number;
+  user_id: number;
+  username: string;
+  email: string;
+  role_id: string;
+  role_key: string;
+  role_name: string;
+  created_at: string;
+}
+
+export interface Role {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+}
 
 export interface CreateProjectRequest {
   name: string;

@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rom8726/floxy-manager/internal/domain"
 	"github.com/rom8726/floxy-manager/pkg/db"
 )
 
 // Write inserts a record into membership_audit within the current transaction (if any).
-// oldVal and newVal are marshaled to JSON. If nil, corresponding column gets NULL.
+// oldVal and newVal are marshaled to JSON. If nil, the corresponding column gets NULL.
 func Write(
 	ctx context.Context,
 	exec db.Tx,
-	membershipID string,
+	membershipID domain.MembershipID,
 	actorUserID int,
 	action string,
 	oldVal any,

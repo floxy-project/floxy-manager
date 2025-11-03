@@ -62,7 +62,7 @@ func (h *ProjectsHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projects, err := h.projectsRepo.ListByTenant(r.Context(), domain.TenantID(tenantID))
+	allProjects, err := h.projectsRepo.ListByTenant(r.Context(), domain.TenantID(tenantID))
 	if err != nil {
 		slog.Error("Failed to list projects by tenant",
 			"error", err,
@@ -70,6 +70,26 @@ func (h *ProjectsHandler) List(w http.ResponseWriter, r *http.Request) {
 		)
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// Filter projects by user permissions
+	isSuper := appcontext.IsSuper(r.Context())
+	var projects []domain.Project
+	if isSuper {
+		// Superuser can see all projects
+		projects = allProjects
+	} else {
+		// Filter projects by permissions
+		accessibleProjects, err := h.permissionsSrv.GetAccessibleProjects(r.Context(), allProjects)
+		if err != nil {
+			slog.Error("Failed to filter projects by permissions",
+				"error", err,
+				"tenant_id", tenantID,
+			)
+			respondError(w, http.StatusInternalServerError, "Failed to filter projects")
+			return
+		}
+		projects = accessibleProjects
 	}
 
 	respondJSON(w, http.StatusOK, projects)

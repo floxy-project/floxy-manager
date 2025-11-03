@@ -16,6 +16,8 @@ import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { TwoFAVerify } from './pages/TwoFAVerify';
 import { Account } from './pages/Account';
+import { Admin } from './pages/Admin';
+import { Memberships } from './pages/Memberships';
 import { useAuth } from './auth/AuthContext';
 
 // Protected Route Component
@@ -61,6 +63,13 @@ function App() {
           </AuthorizedLayout>
         </ProtectedRoute>
       } />
+      <Route path="/admin" element={
+        <ProtectedRoute>
+          <AuthorizedLayout>
+            <Admin />
+          </AuthorizedLayout>
+        </ProtectedRoute>
+      } />
       <Route path="/tenants" element={
         <ProtectedRoute>
           <AuthorizedLayout>
@@ -87,6 +96,7 @@ function App() {
               <Route path="stats" element={<Stats />} />
               <Route path="dlq" element={<DLQ />} />
               <Route path="dlq/:id" element={<DLQDetail />} />
+              <Route path="memberships" element={<Memberships />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </TenantProjectLayout>

@@ -42,6 +42,7 @@ func NewRouter(
 	permissionsService contract.PermissionsService,
 	rolesRepo contract.RolesRepository,
 	membershipsRepo contract.MembershipsRepository,
+	membershipsSrv contract.MembershipsUseCase,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -74,8 +75,9 @@ func NewRouter(
 	ssoHandler := handlers.NewSSOHandler(usersService)
 	tenantsHandler := handlers.NewTenantsHandler(tenantsRepo)
 	projectsHandler := handlers.NewProjectsHandler(projectsRepo, permissionsService, rolesRepo, membershipsRepo)
-	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo)
+	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo, permissionsService)
 	usersHandler := handlers.NewUsersHandler(usersService, projectsRepo, permissionsService)
+	membershipsHandler := handlers.NewMembershipsHandler(membershipsSrv, usersService, permissionsService)
 
 	router.POST("/api/v1/auth/login", wrapHandler(authHandler.Login))
 	router.POST("/api/v1/auth/refresh", wrapHandler(authHandler.Refresh))
@@ -108,6 +110,10 @@ func NewRouter(
 	router.GET("/api/v1/users/me", wrapHandler(usersHandler.GetCurrentUser))
 	router.GET("/api/v1/users/me/projects", wrapHandler(usersHandler.GetMyProjects))
 	router.POST("/api/v1/users/me/password", wrapHandler(usersHandler.UpdatePassword))
+	router.GET("/api/v1/users", wrapHandler(usersHandler.ListUsers))
+	router.POST("/api/v1/users", wrapHandler(usersHandler.CreateUser))
+	router.PUT("/api/v1/users/:id/status", wrapHandler(usersHandler.UpdateUserStatus))
+	router.DELETE("/api/v1/users/:id", wrapHandler(usersHandler.DeleteUser))
 
 	// Workflows endpoints
 	router.GET("/api/v1/workflows", wrapHandler(workflowsHandler.ListWorkflows))
@@ -121,6 +127,12 @@ func NewRouter(
 	router.GET("/api/v1/stats", wrapHandler(workflowsHandler.ListStats))
 	router.GET("/api/v1/dlq", wrapHandler(workflowsHandler.ListDLQ))
 	router.GET("/api/v1/dlq/:id", wrapHandler(workflowsHandler.GetDLQItem))
+
+	// Memberships endpoints
+	router.GET("/api/v1/projects/:id/memberships", wrapHandler(membershipsHandler.ListProjectMemberships))
+	router.POST("/api/v1/projects/:id/memberships", wrapHandler(membershipsHandler.CreateProjectMembership))
+	router.DELETE("/api/v1/projects/:id/memberships/:mid", wrapHandler(membershipsHandler.DeleteProjectMembership))
+	router.GET("/api/v1/roles", wrapHandler(membershipsHandler.ListRoles))
 
 	floxyMux := floxyServer.Mux()
 

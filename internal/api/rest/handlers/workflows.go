@@ -13,12 +13,17 @@ import (
 )
 
 type WorkflowsHandler struct {
-	workflowsRepo contract.WorkflowsRepository
+	workflowsRepo  contract.WorkflowsRepository
+	permissionsSrv contract.PermissionsService
 }
 
-func NewWorkflowsHandler(workflowsRepo contract.WorkflowsRepository) *WorkflowsHandler {
+func NewWorkflowsHandler(
+	workflowsRepo contract.WorkflowsRepository,
+	permissionsSrv contract.PermissionsService,
+) *WorkflowsHandler {
 	return &WorkflowsHandler{
-		workflowsRepo: workflowsRepo,
+		workflowsRepo:  workflowsRepo,
+		permissionsSrv: permissionsSrv,
 	}
 }
 
@@ -84,6 +89,16 @@ func (h *WorkflowsHandler) ListWorkflows(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
 	page, pageSize := parsePagination(r)
 
 	workflowDefs, total, err := h.workflowsRepo.ListWorkflowDefinitions(r.Context(), tenantID, projectID, page, pageSize)
@@ -132,6 +147,16 @@ func (h *WorkflowsHandler) GetWorkflow(w http.ResponseWriter, r *http.Request) {
 			"path", r.URL.Path,
 		)
 		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
 		return
 	}
 
@@ -187,6 +212,16 @@ func (h *WorkflowsHandler) ListWorkflowInstances(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
 	page, pageSize := parsePagination(r)
 
 	instances, total, err := h.workflowsRepo.ListWorkflowInstances(r.Context(), tenantID, projectID, workflowID, page, pageSize)
@@ -232,6 +267,16 @@ func (h *WorkflowsHandler) ListInstances(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
 	page, pageSize := parsePagination(r)
 
 	instances, total, err := h.workflowsRepo.ListWorkflowInstances(r.Context(), tenantID, projectID, "", page, pageSize)
@@ -273,6 +318,16 @@ func (h *WorkflowsHandler) ListActiveWorkflows(w http.ResponseWriter, r *http.Re
 			"path", r.URL.Path,
 		)
 		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
 		return
 	}
 
@@ -333,6 +388,16 @@ func (h *WorkflowsHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 			"path", r.URL.Path,
 		)
 		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
 		return
 	}
 
@@ -397,6 +462,16 @@ func (h *WorkflowsHandler) ListInstanceSteps(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
 	page, pageSize := parsePagination(r)
 
 	steps, total, err := h.workflowsRepo.ListWorkflowSteps(r.Context(), tenantID, projectID, id, page, pageSize)
@@ -458,6 +533,16 @@ func (h *WorkflowsHandler) ListInstanceEvents(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
 	page, pageSize := parsePagination(r)
 
 	events, total, err := h.workflowsRepo.ListWorkflowEvents(r.Context(), tenantID, projectID, id, page, pageSize)
@@ -503,6 +588,16 @@ func (h *WorkflowsHandler) ListStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
 	page, pageSize := parsePagination(r)
 
 	stats, total, err := h.workflowsRepo.ListWorkflowStats(r.Context(), tenantID, projectID, page, pageSize)
@@ -544,6 +639,16 @@ func (h *WorkflowsHandler) ListDLQ(w http.ResponseWriter, r *http.Request) {
 			"path", r.URL.Path,
 		)
 		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
 		return
 	}
 
@@ -604,6 +709,16 @@ func (h *WorkflowsHandler) GetDLQItem(w http.ResponseWriter, r *http.Request) {
 			"path", r.URL.Path,
 		)
 		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check if user has permission to view this project
+	if err := h.permissionsSrv.CanViewProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
 		return
 	}
 

@@ -99,7 +99,7 @@ func (s *Service) CreateProjectMembership(
 		actorID := int(appctx.UserID(ctx))
 		exec := db.TxFromContext(ctx)
 		err = membershipaudit.Write(ctx, exec,
-			string(membership.ID),
+			membership.ID,
 			actorID,
 			"create",
 			nil,
@@ -176,7 +176,7 @@ func (s *Service) UpdateProjectMembership(
 
 		actorID := int(appctx.UserID(ctx))
 		exec := db.TxFromContext(ctx)
-		if err := membershipaudit.Write(ctx, exec, string(m.ID), actorID, "update", old, m); err != nil {
+		if err := membershipaudit.Write(ctx, exec, m.ID, actorID, "update", old, m); err != nil {
 			return fmt.Errorf("write membership audit: %w", err)
 		}
 		//
@@ -233,7 +233,7 @@ func (s *Service) DeleteProjectMembership(
 
 		actorID := int(appctx.UserID(ctx))
 		exec := db.TxFromContext(ctx)
-		err = membershipaudit.Write(ctx, exec, string(old.ID), actorID, "delete", old, nil)
+		err = membershipaudit.Write(ctx, exec, old.ID, actorID, "delete", old, nil)
 		if err != nil {
 			return fmt.Errorf("write membership audit: %w", err)
 		}

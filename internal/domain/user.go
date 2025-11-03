@@ -33,3 +33,7 @@ type UserDTO struct {
 	IsTmpPassword bool
 	IsExternal    bool
 }
+
+func (id UserID) Int() int {
+	return int(id)
+}

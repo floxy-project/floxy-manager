@@ -226,7 +226,7 @@ create table if not exists workflows_manager.membership_audit
 (
     id            bigserial
         primary key,
-    membership_id uuid,
+    membership_id integer,
     actor_user_id integer,
     action        varchar(50)                            not null,
     old_value     jsonb,
