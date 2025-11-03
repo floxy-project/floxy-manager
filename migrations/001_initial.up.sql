@@ -1,8 +1,11 @@
-create domain workflows.email as varchar(255)
-    check (value ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$');
+create schema if not exists workflows;
+create extension if not exists "uuid-ossp";
 
-create domain workflows.username as varchar(255)
-    check (value ~* '^[a-zA-Z0-9._-]{3,255}$');
+-- create domain workflows.email as varchar(255)
+--     check (value ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$');
+--
+-- create domain workflows.username as varchar(255)
+--     check (value ~* '^[a-zA-Z0-9._-]{3,255}$');
 
 -- product_info
 create table if not exists workflows.product_info
@@ -125,11 +128,9 @@ create table if not exists workflows.permissions
 -- role_permissions (многие-ко-многим)
 create table if not exists workflows.role_permissions
 (
-    id            uuid default gen_random_uuid() not null
-        constraint pk_role_permissions primary key,
-    role_id       uuid                           not null,
-    permission_id uuid                           not null,
-    constraint uq_role_permissions unique (role_id, permission_id),
+    role_id       uuid not null,
+    permission_id uuid not null,
+    constraint pk_role_permissions primary key (role_id, permission_id),
     constraint fk_role_permissions_role
         foreign key (role_id) references workflows.roles (id) on delete cascade,
     constraint fk_role_permissions_permission
@@ -209,23 +210,15 @@ values ('b0ca1ed0-07aa-4fa2-a843-8253799240ae', 'project.view', 'View project'),
        ('c100b088-0163-4ae1-82d6-f2eeace0621a', 'project.create', 'Create projects')
 on conflict (key) do nothing;
 
-insert into workflows.role_permissions (id, role_id, permission_id)
-values ('c243ca60-1307-4b92-83ea-a1c22791968b', 'c80633be-e36b-4fb8-8d5d-f4b05c449d37',
-        'b0ca1ed0-07aa-4fa2-a843-8253799240ae'),
-       ('c2a2145e-d598-4e73-bf63-00cd0bfdb015', '348a558f-b00a-419b-a8a4-699f6f8eae3f',
-        'b0ca1ed0-07aa-4fa2-a843-8253799240ae'),
-       ('a1545c30-9929-4594-9653-1af6072b92af', 'fb1c0bf4-65bf-4141-8723-170dffb797fa',
-        'b0ca1ed0-07aa-4fa2-a843-8253799240ae'),
-       ('80468ccf-dd5d-4ddd-85b1-34465574b829', 'c80633be-e36b-4fb8-8d5d-f4b05c449d37',
-        '4465a5a3-ea1e-4ed8-a905-217368483ac4'),
-       ('e3c4b44b-ca8e-44e6-b6d9-e2cf2a3515fc', '348a558f-b00a-419b-a8a4-699f6f8eae3f',
-        '4465a5a3-ea1e-4ed8-a905-217368483ac4'),
-       ('734e6b92-7aaf-4091-9643-d542b9e09f9e', 'c80633be-e36b-4fb8-8d5d-f4b05c449d37',
-        'a6f3cc48-0698-4f12-8e89-7a9e02fd30b2'),
-       ('98de5120-230b-45b8-b3dd-3bf61d5471c2', '348a558f-b00a-419b-a8a4-699f6f8eae3f',
-        'a6f3cc48-0698-4f12-8e89-7a9e02fd30b2'),
-       ('598319f4-4ff9-47bf-9ab5-ea50cb929587', 'c80633be-e36b-4fb8-8d5d-f4b05c449d37',
-        'bb1bc5da-fbe2-4b7d-8088-9ff7642034ce')
+insert into workflows.role_permissions (role_id, permission_id)
+values ('c80633be-e36b-4fb8-8d5d-f4b05c449d37', 'b0ca1ed0-07aa-4fa2-a843-8253799240ae'),
+       ('348a558f-b00a-419b-a8a4-699f6f8eae3f', 'b0ca1ed0-07aa-4fa2-a843-8253799240ae'),
+       ('fb1c0bf4-65bf-4141-8723-170dffb797fa', 'b0ca1ed0-07aa-4fa2-a843-8253799240ae'),
+       ('c80633be-e36b-4fb8-8d5d-f4b05c449d37', '4465a5a3-ea1e-4ed8-a905-217368483ac4'),
+       ('348a558f-b00a-419b-a8a4-699f6f8eae3f', '4465a5a3-ea1e-4ed8-a905-217368483ac4'),
+       ('c80633be-e36b-4fb8-8d5d-f4b05c449d37', 'a6f3cc48-0698-4f12-8e89-7a9e02fd30b2'),
+       ('348a558f-b00a-419b-a8a4-699f6f8eae3f', 'a6f3cc48-0698-4f12-8e89-7a9e02fd30b2'),
+       ('c80633be-e36b-4fb8-8d5d-f4b05c449d37', 'bb1bc5da-fbe2-4b7d-8088-9ff7642034ce')
 on conflict (role_id, permission_id) do nothing;
 
 insert into workflows.tenants (name, created_at) values ('default', now()) on conflict (name) do nothing;
@@ -281,6 +274,16 @@ create table if not exists workflows.ldap_sync_logs
     stack_trace        text,
     ldap_error_code    integer,
     ldap_error_message text
+);
+
+create table if not exists workflows.settings
+(
+    id          serial primary key,
+    name        varchar(50) not null unique,
+    value       jsonb        not null,
+    description varchar(300),
+    created_at  timestamp with time zone default now(),
+    updated_at  timestamp with time zone default now()
 );
 
 create index if not exists idx_ldap_sync_logs_timestamp

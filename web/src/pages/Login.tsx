@@ -69,8 +69,7 @@ export const Login: React.FC = () => {
     setErrors({});
 
     try {
-      // Mock API call - заглушка
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,27 +81,35 @@ export const Login: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
-        setErrors({ general: errorData.message || 'Invalid credentials. Please try again.' });
+        const errorData = await response.json().catch(() => ({ error: 'Login failed' }));
+        setErrors({ general: errorData.error || 'Invalid credentials. Please try again.' });
         setIsLoading(false);
         return;
       }
 
       const data = await response.json();
       
-      // Update auth state using the hook
+      if (data.requires_2fa) {
+        navigate('/2fa', { state: { sessionId: data.session_id } });
+        setIsLoading(false);
+        return;
+      }
+      
       login(
-        data.user || { 
+        { 
           username: formData.usernameOrEmail.includes('@') 
             ? formData.usernameOrEmail.split('@')[0] 
             : formData.usernameOrEmail,
           email: formData.usernameOrEmail.includes('@') ? formData.usernameOrEmail : undefined
         },
-        data.token || 'mock-token'
+        data.access_token || ''
       );
 
-      // Redirect to dashboard
-      navigate('/');
+      if (data.is_tmp_password) {
+        navigate('/change-password');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error('Login error:', error);
       setErrors({ general: 'An error occurred. Please try again later.' });

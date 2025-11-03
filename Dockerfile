@@ -47,6 +47,9 @@ COPY --from=go-builder /app/main .
 # Copy frontend build
 COPY --from=frontend-builder /app/web/dist ./web/dist
 
+# Copy migrations
+COPY --from=go-builder /app/migrations ./migrations
+
 # Expose port
 EXPOSE 3001
 

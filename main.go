@@ -1,38 +1,30 @@
 package main
 
 import (
-	"log"
+	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/rom8726/floxy-manager/internal/config"
-	"github.com/rom8726/floxy-manager/internal/server"
+	"github.com/spf13/cobra"
+
+	"github.com/rom8726/floxy-manager/cmd/server"
 )
 
+var rootCmd = &cobra.Command{
+	Use:   "app",
+	Short: "app",
+}
+
 func main() {
-	// Load configuration
-	cfg := config.Load()
+	rootCmd.AddCommand(server.ServerCmd)
 
-	// Create server
-	srv, err := server.New(cfg)
-	if err != nil {
-		log.Fatal("Failed to create server:", err)
-	}
-	defer srv.Close()
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
-	// Handle a graceful shutdown
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
-		log.Println("Shutting down server...")
-		srv.Close()
-		os.Exit(0)
-	}()
-
-	// Start server
-	if err := srv.Start(); err != nil {
-		log.Fatal("Server failed:", err)
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
+		slog.Error(err.Error())
+		os.Exit(1) //nolint:gocritic // it's ok here
 	}
 }
