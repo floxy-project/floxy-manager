@@ -47,6 +47,8 @@ func NewRouter(
 	rolesRepo contract.RolesRepository,
 	membershipsRepo contract.MembershipsRepository,
 	membershipsSrv contract.MembershipsUseCase,
+	ldapUseCase contract.LDAPSyncUseCase,
+	settingsUseCase contract.SettingsUseCase,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -82,6 +84,7 @@ func NewRouter(
 	workflowsHandler := handlers.NewWorkflowsHandler(workflowsRepo, permissionsService)
 	usersHandler := handlers.NewUsersHandler(usersService, projectsRepo, permissionsService)
 	membershipsHandler := handlers.NewMembershipsHandler(membershipsSrv, usersService, permissionsService)
+	ldapHandler := handlers.NewLDAPHandler(ldapUseCase, settingsUseCase)
 
 	router.POST("/api/v1/auth/login", wrapHandler(authHandler.Login))
 	router.POST("/api/v1/auth/refresh", wrapHandler(authHandler.Refresh))
@@ -137,6 +140,19 @@ func NewRouter(
 	router.POST("/api/v1/projects/:id/memberships", wrapHandler(membershipsHandler.CreateProjectMembership))
 	router.DELETE("/api/v1/projects/:id/memberships/:mid", wrapHandler(membershipsHandler.DeleteProjectMembership))
 	router.GET("/api/v1/roles", wrapHandler(membershipsHandler.ListRoles))
+
+	// LDAP endpoints
+	router.GET("/api/v1/ldap/config", wrapHandler(ldapHandler.GetLDAPConfig))
+	router.POST("/api/v1/ldap/config", wrapHandler(ldapHandler.UpdateLDAPConfig))
+	router.DELETE("/api/v1/ldap/config", wrapHandler(ldapHandler.DeleteLDAPConfig))
+	router.POST("/api/v1/ldap/test-connection", wrapHandler(ldapHandler.TestLDAPConnection))
+	router.POST("/api/v1/ldap/sync/users", wrapHandler(ldapHandler.SyncLDAPUsers))
+	router.DELETE("/api/v1/ldap/sync/cancel", wrapHandler(ldapHandler.CancelLDAPSync))
+	router.GET("/api/v1/ldap/sync/status", wrapHandler(ldapHandler.GetLDAPSyncStatus))
+	router.GET("/api/v1/ldap/sync/progress", wrapHandler(ldapHandler.GetLDAPSyncProgress))
+	router.GET("/api/v1/ldap/sync/logs", wrapHandler(ldapHandler.GetLDAPSyncLogs))
+	router.GET("/api/v1/ldap/sync/logs/:id", wrapHandler(ldapHandler.GetLDAPSyncLogDetails))
+	router.GET("/api/v1/ldap/statistics", wrapHandler(ldapHandler.GetLDAPStatistics))
 
 	floxyMux := floxyServer.Mux()
 

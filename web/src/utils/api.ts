@@ -256,6 +256,65 @@ const apiClient = {
   listRoles: async (): Promise<AxiosResponse<Role[]>> => {
     return api.get('/api/v1/roles');
   },
+
+  // LDAP endpoints
+  getLDAPConfig: async (): Promise<AxiosResponse<LDAPConfig>> => {
+    return api.get('/api/v1/ldap/config');
+  },
+
+  updateLDAPConfig: async (config: LDAPConfig): Promise<AxiosResponse<LDAPConfigResponse>> => {
+    return api.post('/api/v1/ldap/config', config);
+  },
+
+  deleteLDAPConfig: async (): Promise<AxiosResponse<{ message: string }>> => {
+    return api.delete('/api/v1/ldap/config');
+  },
+
+  testLDAPConnection: async (config: LDAPConnectionTest): Promise<AxiosResponse<LDAPConnectionTestResponse>> => {
+    return api.post('/api/v1/ldap/test-connection', config);
+  },
+
+  syncLDAPUsers: async (): Promise<AxiosResponse<LDAPSyncStartResponse>> => {
+    return api.post('/api/v1/ldap/sync/users');
+  },
+
+  cancelLDAPSync: async (): Promise<AxiosResponse<{ message: string }>> => {
+    return api.delete('/api/v1/ldap/sync/cancel');
+  },
+
+  getLDAPSyncStatus: async (): Promise<AxiosResponse<LDAPSyncStatus>> => {
+    return api.get('/api/v1/ldap/sync/status');
+  },
+
+  getLDAPSyncProgress: async (): Promise<AxiosResponse<LDAPSyncProgress>> => {
+    return api.get('/api/v1/ldap/sync/progress');
+  },
+
+  getLDAPSyncLogs: async (
+    limit?: number,
+    level?: string,
+    syncId?: string,
+    username?: string,
+    from?: string,
+    to?: string
+  ): Promise<AxiosResponse<LDAPSyncLogsResult>> => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (level) params.append('level', level);
+    if (syncId) params.append('sync_id', syncId);
+    if (username) params.append('username', username);
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    return api.get(`/api/v1/ldap/sync/logs?${params.toString()}`);
+  },
+
+  getLDAPSyncLogDetails: async (id: number): Promise<AxiosResponse<LDAPSyncLog>> => {
+    return api.get(`/api/v1/ldap/sync/logs/${id}`);
+  },
+
+  getLDAPStatistics: async (): Promise<AxiosResponse<LDAPStatistics>> => {
+    return api.get('/api/v1/ldap/statistics');
+  },
 };
 
 export interface CreateUserRequest {
@@ -330,6 +389,110 @@ export interface Project {
   created_at?: string;
   updated_at?: string;
   archived_at?: string | null;
+}
+
+// LDAP Types
+export interface LDAPConfig {
+  enabled: boolean;
+  url: string;
+  bind_dn: string;
+  bind_password: string;
+  user_base_dn: string;
+  user_filter: string;
+  user_name_attr: string;
+  user_email_attr: string;
+  start_tls: boolean;
+  insecure_tls: boolean;
+  timeout: string;
+  sync_interval: number;
+}
+
+export interface LDAPConfigResponse {
+  message: string;
+  config: LDAPConfig;
+}
+
+export interface LDAPConnectionTest {
+  url: string;
+  bind_dn: string;
+  bind_password: string;
+  user_base_dn?: string;
+  user_filter?: string;
+  user_name_attr?: string;
+  start_tls?: boolean;
+  insecure_tls?: boolean;
+  timeout?: string;
+}
+
+export interface LDAPConnectionTestResponse {
+  success: boolean;
+  message: string;
+  details?: {
+    server_info?: string;
+    user_count?: number;
+    test_user?: string;
+  };
+}
+
+export interface LDAPSyncStartResponse {
+  message: string;
+  sync_id: string;
+  estimated_duration?: string;
+}
+
+export interface LDAPSyncStatus {
+  status: string;
+  is_running: boolean;
+  last_sync_time?: string;
+  total_users: number;
+  synced_users: number;
+  errors: number;
+  warnings: number;
+  last_sync_duration?: string;
+}
+
+export interface LDAPSyncProgress {
+  is_running: boolean;
+  progress: number;
+  current_step?: string;
+  processed_items: number;
+  total_items: number;
+  estimated_time?: string;
+  start_time?: string;
+  sync_id?: string;
+}
+
+export interface LDAPSyncLog {
+  id: number;
+  timestamp: string;
+  level: string;
+  message: string;
+  username?: string | null;
+  details?: string | null;
+  sync_session_id: string;
+  stack_trace?: string | null;
+  ldap_error_code?: number | null;
+  ldap_error_message?: string | null;
+}
+
+export interface LDAPSyncLogsResult {
+  logs: LDAPSyncLog[];
+  total: number;
+  has_more: boolean;
+}
+
+export interface LDAPStatistics {
+  ldap_users: number;
+  local_users: number;
+  active_users: number;
+  inactive_users: number;
+  sync_history: Array<{
+    date: string;
+    users_synced: number;
+    errors: number;
+    duration_minutes: number;
+  }>;
+  sync_success_rate: number;
 }
 
 export default apiClient;

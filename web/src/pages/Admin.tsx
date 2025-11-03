@@ -3,6 +3,9 @@ import { useAuth } from '../auth/AuthContext';
 import { useRBAC } from '../auth/permissions';
 import apiClient, { type UserListItem } from '../utils/api';
 import { Navigate } from 'react-router-dom';
+import LDAPConfigTab from '../components/ldap/LDAPConfigTab';
+import LDAPSyncTab from '../components/ldap/LDAPSyncTab';
+import LDAPLogsTab from '../components/ldap/LDAPLogsTab';
 
 export const Admin: React.FC = () => {
   const { user } = useAuth();
@@ -329,14 +332,7 @@ export const Admin: React.FC = () => {
         </div>
       )}
 
-      {activeTab === 'ldap' && (
-        <div className="card max-w-2xl">
-          <h2 className="text-xl font-semibold mb-4">LDAP Synchronization</h2>
-          <p className="text-slate-600 dark:text-[#ff4500]">
-            LDAP synchronization feature will be implemented here.
-          </p>
-        </div>
-      )}
+      {activeTab === 'ldap' && <LDAPTabContent />}
 
       {/* Create User Modal */}
       {showCreateModal && (
@@ -439,6 +435,56 @@ export const Admin: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// LDAP Tab Content Component
+const LDAPTabContent: React.FC = () => {
+  const [ldapSubTab, setLdapSubTab] = useState<'config' | 'sync' | 'logs'>('config');
+
+  return (
+    <div>
+      {/* LDAP Sub-tabs */}
+      <div className="mb-6 border-b border-slate-200 dark:border-[#3e3e42]">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setLdapSubTab('config')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              ldapSubTab === 'config'
+                ? 'text-slate-900 dark:text-[#ff6b35] border-b-2 border-slate-900 dark:border-[#ff6b35]'
+                : 'text-slate-600 dark:text-[#ff4500] hover:text-slate-900 dark:hover:text-[#ff6b35]'
+            }`}
+          >
+            Configuration
+          </button>
+          <button
+            onClick={() => setLdapSubTab('sync')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              ldapSubTab === 'sync'
+                ? 'text-slate-900 dark:text-[#ff6b35] border-b-2 border-slate-900 dark:border-[#ff6b35]'
+                : 'text-slate-600 dark:text-[#ff4500] hover:text-slate-900 dark:hover:text-[#ff6b35]'
+            }`}
+          >
+            Synchronization
+          </button>
+          <button
+            onClick={() => setLdapSubTab('logs')}
+            className={`px-4 py-2 font-medium transition-colors ${
+              ldapSubTab === 'logs'
+                ? 'text-slate-900 dark:text-[#ff6b35] border-b-2 border-slate-900 dark:border-[#ff6b35]'
+                : 'text-slate-600 dark:text-[#ff4500] hover:text-slate-900 dark:hover:text-[#ff6b35]'
+            }`}
+          >
+            Logs
+          </button>
+        </div>
+      </div>
+
+      {/* LDAP Sub-tab Content */}
+      {ldapSubTab === 'config' && <LDAPConfigTab />}
+      {ldapSubTab === 'sync' && <LDAPSyncTab />}
+      {ldapSubTab === 'logs' && <LDAPLogsTab />}
     </div>
   );
 };
