@@ -27,47 +27,6 @@ func NewWorkflowsHandler(
 	}
 }
 
-func requireAuthForWorkflows(w http.ResponseWriter, r *http.Request) bool {
-	return checkAuthAndRespond(w, r)
-}
-
-func parseTenantAndProject(r *http.Request) (domain.TenantID, domain.ProjectID, error) {
-	tenantIDStr := r.URL.Query().Get("tenant_id")
-	projectIDStr := r.URL.Query().Get("project_id")
-
-	if tenantIDStr == "" || projectIDStr == "" {
-		return 0, 0, fmt.Errorf("tenant_id and project_id are required")
-	}
-
-	tenantID, err := strconv.Atoi(tenantIDStr)
-	if err != nil {
-		return 0, 0, fmt.Errorf("invalid tenant_id")
-	}
-
-	projectID, err := strconv.Atoi(projectIDStr)
-	if err != nil {
-		return 0, 0, fmt.Errorf("invalid project_id")
-	}
-
-	return domain.TenantID(tenantID), domain.ProjectID(projectID), nil
-}
-
-func parsePagination(r *http.Request) (page, pageSize int) {
-	page = 1
-	pageSize = 20
-	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
-		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-			page = p
-		}
-	}
-	if pageSizeStr := r.URL.Query().Get("page_size"); pageSizeStr != "" {
-		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 {
-			pageSize = ps
-		}
-	}
-	return page, pageSize
-}
-
 // ListWorkflows handles GET /api/v1/workflows
 func (h *WorkflowsHandler) ListWorkflows(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -224,7 +183,14 @@ func (h *WorkflowsHandler) ListWorkflowInstances(w http.ResponseWriter, r *http.
 
 	page, pageSize := parsePagination(r)
 
-	instances, total, err := h.workflowsRepo.ListWorkflowInstances(r.Context(), tenantID, projectID, workflowID, page, pageSize)
+	instances, total, err := h.workflowsRepo.ListWorkflowInstances(
+		r.Context(),
+		tenantID,
+		projectID,
+		workflowID,
+		page,
+		pageSize,
+	)
 	if err != nil {
 		slog.Error("Failed to list workflow instances for workflow",
 			"error", err,
@@ -279,7 +245,14 @@ func (h *WorkflowsHandler) ListInstances(w http.ResponseWriter, r *http.Request)
 
 	page, pageSize := parsePagination(r)
 
-	instances, total, err := h.workflowsRepo.ListWorkflowInstances(r.Context(), tenantID, projectID, "", page, pageSize)
+	instances, total, err := h.workflowsRepo.ListWorkflowInstances(
+		r.Context(),
+		tenantID,
+		projectID,
+		"",
+		page,
+		pageSize,
+	)
 	if err != nil {
 		slog.Error("Failed to list workflow instances",
 			"error", err,
@@ -333,7 +306,13 @@ func (h *WorkflowsHandler) ListActiveWorkflows(w http.ResponseWriter, r *http.Re
 
 	page, pageSize := parsePagination(r)
 
-	activeWorkflows, total, err := h.workflowsRepo.ListActiveWorkflows(r.Context(), tenantID, projectID, page, pageSize)
+	activeWorkflows, total, err := h.workflowsRepo.ListActiveWorkflows(
+		r.Context(),
+		tenantID,
+		projectID,
+		page,
+		pageSize,
+	)
 	if err != nil {
 		slog.Error("Failed to list active workflows",
 			"error", err,
@@ -744,4 +723,45 @@ func (h *WorkflowsHandler) GetDLQItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, item)
+}
+
+func requireAuthForWorkflows(w http.ResponseWriter, r *http.Request) bool {
+	return checkAuthAndRespond(w, r)
+}
+
+func parseTenantAndProject(r *http.Request) (domain.TenantID, domain.ProjectID, error) {
+	tenantIDStr := r.URL.Query().Get("tenant_id")
+	projectIDStr := r.URL.Query().Get("project_id")
+
+	if tenantIDStr == "" || projectIDStr == "" {
+		return 0, 0, fmt.Errorf("tenant_id and project_id are required")
+	}
+
+	tenantID, err := strconv.Atoi(tenantIDStr)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid tenant_id")
+	}
+
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		return 0, 0, fmt.Errorf("invalid project_id")
+	}
+
+	return domain.TenantID(tenantID), domain.ProjectID(projectID), nil
+}
+
+func parsePagination(r *http.Request) (page, pageSize int) {
+	page = 1
+	pageSize = 20
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+	}
+	if pageSizeStr := r.URL.Query().Get("page_size"); pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 {
+			pageSize = ps
+		}
+	}
+	return page, pageSize
 }
