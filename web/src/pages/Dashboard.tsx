@@ -45,24 +45,26 @@ export const Dashboard: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [summaryRes, activeRes] = await Promise.all([
+      const [summaryRes, activeRes, instancesRes] = await Promise.all([
         authFetch(`/api/v1/stats?tenant_id=${tenantId}&project_id=${projectId}`),
-        authFetch(`/api/v1/active-workflows?tenant_id=${tenantId}&project_id=${projectId}`)
+        authFetch(`/api/v1/active-workflows?tenant_id=${tenantId}&project_id=${projectId}`),
+        authFetch(`/api/v1/instances?tenant_id=${tenantId}&project_id=${projectId}&page=1&page_size=1`)
       ]);
 
-        if (!summaryRes.ok || !activeRes.ok) {
+        if (!summaryRes.ok || !activeRes.ok || !instancesRes.ok) {
           throw new Error('Failed to fetch data');
         }
 
         const summaryDataRaw = await summaryRes.json();
         const activeDataRaw = await activeRes.json();
+        const instancesDataRaw = await instancesRes.json();
 
         const summaryData = Array.isArray(summaryDataRaw) ? summaryDataRaw : (summaryDataRaw.items || []);
         const activeData = Array.isArray(activeDataRaw) ? activeDataRaw : (activeDataRaw.items || []);
+        const instancesData = instancesDataRaw.total || 0;
 
         const stats = Array.isArray(summaryData) ? summaryData : [];
-        const totalWorkflows = stats.length;
-        const totalInstances = stats.reduce((sum, stat) => sum + (stat.total_instances || 0), 0);
+        const totalInstances = instancesData;
         const totalCompleted = stats.reduce((sum, stat) => sum + (stat.completed_instances || 0), 0);
         const totalFailed = stats.reduce((sum, stat) => sum + (stat.failed_instances || 0), 0);
         const totalRunning = stats.reduce((sum, stat) => sum + (stat.running_instances || 0), 0);
@@ -70,7 +72,7 @@ export const Dashboard: React.FC = () => {
         const activeWorkflowsCount = activeWorkflowsList.length;
         
         setSummary({
-          total_workflows: totalWorkflows,
+          total_workflows: totalInstances,
           completed_workflows: totalCompleted,
           failed_workflows: totalFailed,
           running_workflows: totalRunning,
