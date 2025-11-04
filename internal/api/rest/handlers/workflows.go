@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -723,6 +724,115 @@ func (h *WorkflowsHandler) GetDLQItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, item)
+}
+
+// ListUnassignedWorkflows handles GET /api/v1/workflows/unassigned
+func (h *WorkflowsHandler) ListUnassignedWorkflows(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !requireAuthForWorkflows(w, r) {
+		return
+	}
+
+	// Check if user is superuser or has project management permission
+	// Superusers can view all unassigned workflows
+	// Project managers can also view unassigned workflows to assign them to their projects
+	isSuper := appcontext.IsSuper(r.Context())
+	if !isSuper {
+		// For non-superusers, we still allow viewing unassigned workflows
+		// as they may need to assign them to their projects
+		// The actual assignment will be checked by CanManageProject in AssignWorkflowsToProject
+	}
+
+	page, pageSize := parsePagination(r)
+
+	workflowDefs, total, err := h.workflowsRepo.ListUnassignedWorkflowDefinitions(r.Context(), page, pageSize)
+	if err != nil {
+		slog.Error("Failed to list unassigned workflow definitions",
+			"error", err,
+			"page", page,
+			"page_size", pageSize,
+		)
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"items":     workflowDefs,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     total,
+	})
+}
+
+// AssignWorkflowsToProject handles POST /api/v1/projects/:id/workflows/assign
+func (h *WorkflowsHandler) AssignWorkflowsToProject(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !requireAuthForWorkflows(w, r) {
+		return
+	}
+
+	// Get project ID from URL params
+	projectIDStr := appcontext.Param(r.Context(), "id")
+	if projectIDStr == "" {
+		respondError(w, http.StatusBadRequest, "project id is required")
+		return
+	}
+
+	projectIDInt, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "invalid project id")
+		return
+	}
+
+	projectID := domain.ProjectID(projectIDInt)
+
+	// Check if user has permission to manage this project
+	if err := h.permissionsSrv.CanManageProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to manage this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
+	var req struct {
+		WorkflowIDs []string `json:"workflow_ids"`
+		// If workflow_ids is empty, assign all unassigned workflows
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	assignedCount, err := h.workflowsRepo.AssignWorkflowDefinitionsToProject(
+		r.Context(),
+		projectID,
+		req.WorkflowIDs,
+	)
+	if err != nil {
+		slog.Error("Failed to assign workflow definitions to project",
+			"error", err,
+			"project_id", projectID,
+			"workflow_ids", req.WorkflowIDs,
+		)
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message":        "Workflow definitions assigned successfully",
+		"assigned_count": assignedCount,
+	})
 }
 
 func requireAuthForWorkflows(w http.ResponseWriter, r *http.Request) bool {

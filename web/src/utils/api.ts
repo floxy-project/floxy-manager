@@ -330,7 +330,33 @@ const apiClient = {
   getLDAPStatistics: async (): Promise<AxiosResponse<LDAPStatistics>> => {
     return api.get('/api/v1/ldap/statistics');
   },
+
+  // Workflow assignment endpoints
+  listUnassignedWorkflows: async (
+    page?: number,
+    pageSize?: number
+  ): Promise<AxiosResponse<WorkflowsResponse>> => {
+    const params = new URLSearchParams();
+    if (page) params.append('page', page.toString());
+    if (pageSize) params.append('page_size', pageSize.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get(`/api/v1/unassigned-workflows${query}`);
+  },
+
+  assignWorkflowsToProject: async (
+    projectId: number,
+    workflowIds?: string[]
+  ): Promise<AxiosResponse<AssignWorkflowsResponse>> => {
+    return api.post(`/api/v1/projects/${projectId}/workflows/assign`, {
+      workflow_ids: workflowIds || [],
+    });
+  },
 };
+
+export interface AssignWorkflowsResponse {
+  message: string;
+  assigned_count: number;
+}
 
 export interface CreateUserRequest {
   username: string;

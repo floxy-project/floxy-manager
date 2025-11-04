@@ -491,6 +491,114 @@ LIMIT 1`
 	return model.toDomain(), nil
 }
 
+// ListUnassignedWorkflowDefinitions returns workflow definitions that are not assigned to any project
+func (r *Repository) ListUnassignedWorkflowDefinitions(
+	ctx context.Context,
+	page, pageSize int,
+) ([]domain.WorkflowDefinition, int, error) {
+	executor := r.getExecutor(ctx)
+
+	offset := (page - 1) * pageSize
+
+	// Count total - workflows that are not in project_workflows
+	countQuery := `
+SELECT COUNT(*) 
+FROM workflows.workflow_definitions wd
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM workflows_manager.project_workflows pw 
+    WHERE pw.workflow_definition_id = wd.id
+)`
+
+	var total int
+	err := executor.QueryRow(ctx, countQuery).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count unassigned workflow definitions: %w", err)
+	}
+
+	// Fetch items
+	const query = `
+SELECT 
+    0 as tenant_id,
+    0 as project_id,
+    wd.id,
+    wd.name,
+    wd.version,
+    wd.definition::text as definition,
+    wd.created_at
+FROM workflows.workflow_definitions wd
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM workflows_manager.project_workflows pw 
+    WHERE pw.workflow_definition_id = wd.id
+)
+ORDER BY wd.created_at DESC
+LIMIT $1 OFFSET $2`
+
+	rows, err := executor.Query(ctx, query, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("query unassigned workflow definitions: %w", err)
+	}
+	defer rows.Close()
+
+	listModels, err := pgx.CollectRows(rows, pgx.RowToStructByName[workflowDefinitionModel])
+	if err != nil {
+		return nil, 0, fmt.Errorf("collect unassigned workflow definitions: %w", err)
+	}
+
+	definitions := make([]domain.WorkflowDefinition, 0, len(listModels))
+	for i := range listModels {
+		definitions = append(definitions, listModels[i].toDomain())
+	}
+
+	return definitions, total, nil
+}
+
+// AssignWorkflowDefinitionsToProject assigns workflow definitions to a project
+// If workflowIDs is empty, assigns all unassigned workflows
+func (r *Repository) AssignWorkflowDefinitionsToProject(
+	ctx context.Context,
+	projectID domain.ProjectID,
+	workflowIDs []string,
+) (int, error) {
+	executor := r.getExecutor(ctx)
+
+	var query string
+	var args []interface{}
+
+	if len(workflowIDs) == 0 {
+		// Assign all unassigned workflows
+		query = `
+INSERT INTO workflows_manager.project_workflows (project_id, workflow_definition_id)
+SELECT $1, wd.id
+FROM workflows.workflow_definitions wd
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM workflows_manager.project_workflows pw 
+    WHERE pw.workflow_definition_id = wd.id
+)
+ON CONFLICT (project_id, workflow_definition_id) DO NOTHING`
+		args = []interface{}{projectID.Int()}
+	} else {
+		// Assign specific workflows - use VALUES clause for better performance
+		query = `
+INSERT INTO workflows_manager.project_workflows (project_id, workflow_definition_id)
+SELECT $1, wd.id
+FROM workflows.workflow_definitions wd
+WHERE wd.id = ANY($2::text[])
+ON CONFLICT (project_id, workflow_definition_id) DO NOTHING`
+		args = []interface{}{projectID.Int(), workflowIDs}
+	}
+
+	result, err := executor.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("assign workflow definitions to project: %w", err)
+	}
+
+	rowsAffected := result.RowsAffected()
+	return int(rowsAffected), nil
+}
+
 //nolint:ireturn // it's ok here
 func (r *Repository) getExecutor(ctx context.Context) db.Tx {
 	if tx := db.TxFromContext(ctx); tx != nil {

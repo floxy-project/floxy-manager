@@ -70,4 +70,13 @@ type WorkflowsRepository interface {
 		projectID domain.ProjectID,
 		id int,
 	) (domain.DLQItem, error)
+	ListUnassignedWorkflowDefinitions(
+		ctx context.Context,
+		page, pageSize int,
+	) ([]domain.WorkflowDefinition, int, error)
+	AssignWorkflowDefinitionsToProject(
+		ctx context.Context,
+		projectID domain.ProjectID,
+		workflowIDs []string,
+	) (int, error)
 }

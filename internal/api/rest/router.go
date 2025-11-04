@@ -126,16 +126,20 @@ func NewRouter(
 
 	// Workflows endpoints
 	router.GET("/api/v1/workflows", wrapHandler(workflowsHandler.ListWorkflows))
+	router.GET("/api/v1/active-workflows", wrapHandler(workflowsHandler.ListActiveWorkflows))
+	router.GET("/api/v1/unassigned-workflows", wrapHandler(workflowsHandler.ListUnassignedWorkflows))
 	router.GET("/api/v1/workflows/:id", wrapHandler(workflowsHandler.GetWorkflow))
 	router.GET("/api/v1/workflows/:id/instances", wrapHandler(workflowsHandler.ListWorkflowInstances))
 	router.GET("/api/v1/instances", wrapHandler(workflowsHandler.ListInstances))
 	router.GET("/api/v1/instances/:id", wrapHandler(workflowsHandler.GetInstance))
-	router.GET("/api/v1/active-workflows", wrapHandler(workflowsHandler.ListActiveWorkflows))
 	router.GET("/api/v1/instances/:id/steps", wrapHandler(workflowsHandler.ListInstanceSteps))
 	router.GET("/api/v1/instances/:id/events", wrapHandler(workflowsHandler.ListInstanceEvents))
 	router.GET("/api/v1/stats", wrapHandler(workflowsHandler.ListStats))
 	router.GET("/api/v1/dlq", wrapHandler(workflowsHandler.ListDLQ))
 	router.GET("/api/v1/dlq/:id", wrapHandler(workflowsHandler.GetDLQItem))
+
+	// Project workflows assignment endpoints
+	router.POST("/api/v1/projects/:id/workflows/assign", wrapHandler(workflowsHandler.AssignWorkflowsToProject))
 
 	// Memberships endpoints
 	router.GET("/api/v1/projects/:id/memberships", wrapHandler(membershipsHandler.ListProjectMemberships))

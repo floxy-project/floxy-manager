@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
 import { useRBAC } from '../auth/permissions';
+import { AssignWorkflowsModal } from '../components/AssignWorkflowsModal';
 
 interface WorkflowDefinition {
   id: string;
@@ -27,6 +28,7 @@ export const Workflows: React.FC = () => {
   const [pageSize] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
   const rbac = useRBAC(projectId);
+  const [showAssignWorkflowsModal, setShowAssignWorkflowsModal] = useState(false);
 
   useEffect(() => {
     if (tenantId && projectId) {
@@ -49,6 +51,10 @@ export const Workflows: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAssignWorkflows = () => {
+    fetchWorkflows(); // Refresh workflows list after assignment
   };
 
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -93,7 +99,20 @@ export const Workflows: React.FC = () => {
 
   return (
     <div>
-      <h1>Workflow Definitions</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1>Workflow Definitions</h1>
+        {rbac.canManageProject() && (
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAssignWorkflowsModal(true)}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Assign Workflows
+          </button>
+        )}
+      </div>
       
       <div className="card">
         {workflows.length === 0 ? (
@@ -189,6 +208,13 @@ export const Workflows: React.FC = () => {
           </>
         )}
       </div>
+
+      <AssignWorkflowsModal
+        isOpen={showAssignWorkflowsModal}
+        onClose={() => setShowAssignWorkflowsModal(false)}
+        onAssign={handleAssignWorkflows}
+        projectId={projectId || ''}
+      />
     </div>
   );
 };

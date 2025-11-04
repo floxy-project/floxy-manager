@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CleanupModal } from '../components/CleanupModal';
+import { AssignWorkflowsModal } from '../components/AssignWorkflowsModal';
 import { authFetch } from '../utils/api';
 import { useRBAC } from '../auth/permissions';
 
@@ -34,6 +35,7 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
+  const [showAssignWorkflowsModal, setShowAssignWorkflowsModal] = useState(false);
 
   useEffect(() => {
     if (tenantId && projectId) {
@@ -86,6 +88,10 @@ export const Dashboard: React.FC = () => {
 
   const handleCleanup = (daysToKeep: number) => {
     window.location.reload();
+  };
+
+  const handleAssignWorkflows = () => {
+    fetchData(); // Refresh data after assignment
   };
 
   const formatDuration = (started: string, updated: string) => {
@@ -167,15 +173,26 @@ export const Dashboard: React.FC = () => {
           <p className="text-slate-600 dark:text-[#ff4500]500 mb-4">
             Manage workflow instances and perform system maintenance tasks.
           </p>
-          <button
-            className="btn btn-danger"
-            onClick={() => setShowCleanupModal(true)}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Cleanup Old Workflows
-          </button>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowAssignWorkflowsModal(true)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Assign Workflows to Project
+            </button>
+            <button
+              className="btn btn-danger"
+              onClick={() => setShowCleanupModal(true)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Cleanup Old Workflows
+            </button>
+          </div>
         </div>
       )}
 
@@ -256,6 +273,12 @@ export const Dashboard: React.FC = () => {
         isOpen={showCleanupModal}
         onClose={() => setShowCleanupModal(false)}
         onCleanup={handleCleanup}
+        projectId={projectId || ''}
+      />
+      <AssignWorkflowsModal
+        isOpen={showAssignWorkflowsModal}
+        onClose={() => setShowAssignWorkflowsModal(false)}
+        onAssign={handleAssignWorkflows}
         projectId={projectId || ''}
       />
     </div>
