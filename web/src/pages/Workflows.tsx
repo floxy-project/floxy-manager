@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
 import { useRBAC } from '../auth/permissions';
 import { AssignWorkflowsModal } from '../components/AssignWorkflowsModal';
+import { WorkflowBuilder, type WorkflowDefinition as BuilderWorkflowDefinition } from '../components/WorkflowBuilder';
 
 interface WorkflowDefinition {
   id: string;
@@ -29,6 +30,7 @@ export const Workflows: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const rbac = useRBAC(projectId);
   const [showAssignWorkflowsModal, setShowAssignWorkflowsModal] = useState(false);
+  const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
 
   useEffect(() => {
     if (tenantId && projectId) {
@@ -102,15 +104,26 @@ export const Workflows: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1>Workflow Definitions</h1>
         {rbac.canManageProject() && (
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowAssignWorkflowsModal(true)}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Assign Workflows
-          </button>
+          <div className="flex gap-3">
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowWorkflowBuilder(true)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Create Workflow
+            </button>
+            <button
+              className="btn btn-outline"
+              onClick={() => setShowAssignWorkflowsModal(true)}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Assign Workflows
+            </button>
+          </div>
         )}
       </div>
       
@@ -214,6 +227,16 @@ export const Workflows: React.FC = () => {
         onClose={() => setShowAssignWorkflowsModal(false)}
         onAssign={handleAssignWorkflows}
         projectId={projectId || ''}
+      />
+      <WorkflowBuilder
+        isOpen={showWorkflowBuilder}
+        onClose={() => setShowWorkflowBuilder(false)}
+        onSave={(definition) => {
+          console.log('Workflow definition:', definition);
+          // TODO: Save to backend
+          alert('Workflow saved! (JSON exported to console)');
+          setShowWorkflowBuilder(false);
+        }}
       />
     </div>
   );
