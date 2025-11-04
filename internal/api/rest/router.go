@@ -126,6 +126,7 @@ func NewRouter(
 
 	// Workflows endpoints
 	router.GET("/api/v1/workflows", wrapHandler(workflowsHandler.ListWorkflows))
+	router.POST("/api/v1/workflows", wrapHandler(workflowsHandler.CreateWorkflow))
 	router.GET("/api/v1/active-workflows", wrapHandler(workflowsHandler.ListActiveWorkflows))
 	router.GET("/api/v1/unassigned-workflows", wrapHandler(workflowsHandler.ListUnassignedWorkflows))
 	router.GET("/api/v1/workflows/:id", wrapHandler(workflowsHandler.GetWorkflow))

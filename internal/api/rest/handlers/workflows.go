@@ -835,6 +835,102 @@ func (h *WorkflowsHandler) AssignWorkflowsToProject(w http.ResponseWriter, r *ht
 	})
 }
 
+// CreateWorkflow handles POST /api/v1/workflows
+func (h *WorkflowsHandler) CreateWorkflow(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if !requireAuthForWorkflows(w, r) {
+		return
+	}
+
+	tenantID, projectID, err := parseTenantAndProject(r)
+	if err != nil {
+		slog.Warn("Invalid tenant_id or project_id in request",
+			"error", err,
+			"path", r.URL.Path,
+		)
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Check if user has permission to manage this project
+	if err := h.permissionsSrv.CanManageProject(r.Context(), projectID); err != nil {
+		if errors.Is(err, domain.ErrPermissionDenied) {
+			respondError(w, http.StatusForbidden, "Access denied to manage this project")
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+		return
+	}
+
+	var req struct {
+		Name       string          `json:"name"`
+		Version    int             `json:"version"`
+		Definition json.RawMessage `json:"definition"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		respondError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	if req.Version <= 0 {
+		respondError(w, http.StatusBadRequest, "version must be greater than 0")
+		return
+	}
+
+	if len(req.Definition) == 0 {
+		respondError(w, http.StatusBadRequest, "definition is required")
+		return
+	}
+
+	// Create workflow definition and assign to project atomically
+	workflowID, err := h.workflowsRepo.CreateWorkflowDefinition(
+		r.Context(),
+		projectID,
+		req.Name,
+		req.Version,
+		req.Definition,
+	)
+	if err != nil {
+		slog.Error("Failed to create workflow definition",
+			"error", err,
+			"name", req.Name,
+			"version", req.Version,
+			"project_id", projectID,
+		)
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Get the created workflow to return
+	workflow, err := h.workflowsRepo.GetWorkflowDefinition(r.Context(), tenantID, projectID, workflowID)
+	if err != nil {
+		slog.Error("Failed to get created workflow definition",
+			"error", err,
+			"workflow_id", workflowID,
+		)
+		// Return basic info anyway
+		respondJSON(w, http.StatusCreated, map[string]interface{}{
+			"id":      workflowID,
+			"name":    req.Name,
+			"version": req.Version,
+			"message": "Workflow definition created successfully",
+		})
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, workflow)
+}
+
 func requireAuthForWorkflows(w http.ResponseWriter, r *http.Request) bool {
 	return checkAuthAndRespond(w, r)
 }

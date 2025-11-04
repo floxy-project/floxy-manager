@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { WorkflowGraph, type GraphDefinition, type StepDefinition } from './WorkflowGraph';
 
 export interface WorkflowDefinition {
@@ -32,6 +32,18 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
   );
   const [startStep, setStartStep] = useState(initialDefinition?.definition.start || '');
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
+
+  // Clear state when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setWorkflowName('');
+      setWorkflowVersion(1);
+      setDlqEnabled(false);
+      setSteps({});
+      setStartStep('');
+      setSelectedStep(null);
+    }
+  }, [isOpen]);
 
   const handleAddStep = (type: StepDefinition['type']) => {
     const stepName = `step_${Date.now()}`;

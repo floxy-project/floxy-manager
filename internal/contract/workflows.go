@@ -2,6 +2,7 @@ package contract
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/rom8726/floxy-manager/internal/domain"
 )
@@ -79,4 +80,11 @@ type WorkflowsRepository interface {
 		projectID domain.ProjectID,
 		workflowIDs []string,
 	) (int, error)
+	CreateWorkflowDefinition(
+		ctx context.Context,
+		projectID domain.ProjectID,
+		name string,
+		version int,
+		definition json.RawMessage,
+	) (string, error)
 }

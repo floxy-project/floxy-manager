@@ -351,11 +351,42 @@ const apiClient = {
       workflow_ids: workflowIds || [],
     });
   },
+
+  createWorkflow: async (
+    tenantId: number,
+    projectId: number,
+    name: string,
+    version: number,
+    definition: any
+  ): Promise<AxiosResponse<WorkflowDefinition>> => {
+    return api.post(`/api/v1/workflows?tenant_id=${tenantId}&project_id=${projectId}`, {
+      name,
+      version,
+      definition,
+    });
+  },
 };
 
 export interface AssignWorkflowsResponse {
   message: string;
   assigned_count: number;
+}
+
+export interface WorkflowDefinition {
+  tenant_id: number;
+  project_id: number;
+  id: string;
+  name: string;
+  version: number;
+  definition: any;
+  created_at: string;
+}
+
+export interface WorkflowsResponse {
+  items: WorkflowDefinition[];
+  page: number;
+  page_size: number;
+  total: number;
 }
 
 export interface CreateUserRequest {

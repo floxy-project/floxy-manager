@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -597,6 +598,47 @@ ON CONFLICT (project_id, workflow_definition_id) DO NOTHING`
 
 	rowsAffected := result.RowsAffected()
 	return int(rowsAffected), nil
+}
+
+// CreateWorkflowDefinition creates a new workflow definition in the database
+// and automatically assigns it to the specified project
+func (r *Repository) CreateWorkflowDefinition(
+	ctx context.Context,
+	projectID domain.ProjectID,
+	name string,
+	version int,
+	definition json.RawMessage,
+) (string, error) {
+	executor := r.getExecutor(ctx)
+
+	id := fmt.Sprintf("%s-v%d", name, version)
+
+	// First, create or update the workflow definition
+	createQuery := `
+INSERT INTO workflows.workflow_definitions (id, name, version, definition)
+VALUES ($1, $2, $3, $4::jsonb)
+ON CONFLICT (name, version) DO UPDATE 
+SET definition = EXCLUDED.definition
+RETURNING id`
+
+	var workflowID string
+	err := executor.QueryRow(ctx, createQuery, id, name, version, definition).Scan(&workflowID)
+	if err != nil {
+		return "", fmt.Errorf("create workflow definition: %w", err)
+	}
+
+	// Then assign to project (this will be atomic within the same transaction)
+	assignQuery := `
+INSERT INTO workflows_manager.project_workflows (project_id, workflow_definition_id)
+VALUES ($1, $2)
+ON CONFLICT (project_id, workflow_definition_id) DO NOTHING`
+
+	_, err = executor.Exec(ctx, assignQuery, projectID.Int(), workflowID)
+	if err != nil {
+		return "", fmt.Errorf("assign workflow to project: %w", err)
+	}
+
+	return workflowID, nil
 }
 
 //nolint:ireturn // it's ok here

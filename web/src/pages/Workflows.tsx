@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import apiClient from '../utils/api';
 import { useRBAC } from '../auth/permissions';
 import { AssignWorkflowsModal } from '../components/AssignWorkflowsModal';
 import { WorkflowBuilder, type WorkflowDefinition as BuilderWorkflowDefinition } from '../components/WorkflowBuilder';
@@ -231,11 +232,35 @@ export const Workflows: React.FC = () => {
       <WorkflowBuilder
         isOpen={showWorkflowBuilder}
         onClose={() => setShowWorkflowBuilder(false)}
-        onSave={(definition) => {
-          console.log('Workflow definition:', definition);
-          // TODO: Save to backend
-          alert('Workflow saved! (JSON exported to console)');
-          setShowWorkflowBuilder(false);
+        onSave={async (definition) => {
+          if (!tenantId || !projectId) {
+            alert('Tenant ID and Project ID are required');
+            return;
+          }
+
+          try {
+            // Convert definition to JSON format
+            const jsonDefinition = {
+              start: definition.definition.start,
+              steps: definition.definition.steps,
+              dlq_enabled: definition.definition.dlq_enabled || false,
+            };
+
+            await apiClient.createWorkflow(
+              parseInt(tenantId),
+              parseInt(projectId),
+              definition.name,
+              definition.version,
+              jsonDefinition
+            );
+
+            // Refresh workflows list
+            await fetchWorkflows();
+            setShowWorkflowBuilder(false);
+          } catch (err) {
+            console.error('Failed to save workflow:', err);
+            alert(`Failed to save workflow: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
         }}
       />
     </div>
