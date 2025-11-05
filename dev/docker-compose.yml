@@ -56,7 +56,7 @@ services:
       start_period: 60s
 
   floxym-postgresql:
-    image: postgres:17
+    image: rom8726/postgres-partman:latest
     container_name: floxym-postgresql
     restart: always
     environment:
