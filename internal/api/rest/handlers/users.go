@@ -374,7 +374,7 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ListUsers returns all users. Only superusers can list users.
+// ListUsers returns all users. Superusers and users with membership.manage permission can list users.
 func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -386,15 +386,40 @@ func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if user is superuser
-	if !appcontext.IsSuper(r.Context()) {
-		respondError(w, http.StatusForbidden, "Only superusers can list users")
-		return
+	isSuper := appcontext.IsSuper(r.Context())
+	if !isSuper {
+		userID := appcontext.UserID(r.Context())
+		if userID == 0 {
+			respondError(w, http.StatusUnauthorized, "Unauthorized")
+			return
+		}
+
+		// Check if user has membership.manage permission in any project
+		allProjects, err := h.projectsRepo.List(r.Context())
+		if err != nil {
+			respondError(w, http.StatusInternalServerError, "Failed to check permissions")
+			return
+		}
+
+		hasMembershipManage := false
+		for _, project := range allProjects {
+			hasManage, err := h.permissionsService.HasProjectPermission(r.Context(), project.ID, domain.PermMembershipManage)
+			if err == nil && hasManage {
+				hasMembershipManage = true
+				break
+			}
+		}
+
+		if !hasMembershipManage {
+			respondError(w, http.StatusForbidden, "Only superusers or users with membership.manage permission can list users")
+			return
+		}
 	}
 
 	users, err := h.usersService.List(r.Context())
 	if err != nil {
 		if errors.Is(err, domain.ErrPermissionDenied) {
-			respondError(w, http.StatusForbidden, "Only superusers can list users")
+			respondError(w, http.StatusForbidden, "Access denied")
 			return
 		}
 		respondError(w, http.StatusInternalServerError, "Failed to list users")

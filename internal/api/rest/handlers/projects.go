@@ -105,7 +105,7 @@ func (h *ProjectsHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user is superuser or has project.manage permission (meaning they are project_owner somewhere)
+	// Check if user is superuser or is project_owner in any project
 	isSuper := appcontext.IsSuper(r.Context())
 	if !isSuper {
 		userID := appcontext.UserID(r.Context())
@@ -114,7 +114,7 @@ func (h *ProjectsHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Check if user has project.manage permission in any project (meaning they are project_owner)
+		// Check if user is project_owner in any project
 		allProjects, err := h.projectsRepo.List(r.Context())
 		if err != nil {
 			slog.Error("Failed to list projects for permission check", "error", err)
@@ -122,16 +122,25 @@ func (h *ProjectsHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		hasManagePermission := false
+		isProjectOwner := false
 		for _, project := range allProjects {
-			hasManage, err := h.permissionsSrv.HasProjectPermission(r.Context(), project.ID, domain.PermProjectManage)
-			if err == nil && hasManage {
-				hasManagePermission = true
+			roleID, err := h.membershipsRepo.GetForUserProject(r.Context(), userID, project.ID)
+			if err != nil || roleID == "" {
+				continue
+			}
+
+			role, err := h.rolesRepo.GetByID(r.Context(), domain.RoleID(roleID))
+			if err != nil {
+				continue
+			}
+
+			if role.Key == "project_owner" {
+				isProjectOwner = true
 				break
 			}
 		}
 
-		if !hasManagePermission {
+		if !isProjectOwner {
 			respondError(w, http.StatusForbidden, "Only superusers or project owners can create projects")
 			return
 		}

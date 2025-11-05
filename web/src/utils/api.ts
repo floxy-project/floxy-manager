@@ -81,6 +81,7 @@ export interface User {
   last_login: string | null;
   license_accepted: boolean;
   project_permissions?: Record<string, string[]>;
+  project_roles?: Record<string, string>; // project_id -> role_key
 }
 
 export interface ProjectInfo {

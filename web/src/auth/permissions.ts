@@ -52,13 +52,14 @@ export function useRBAC(projectId?: string | number) {
 
         const check = (p: PermissionKey) => hasPermission(projectId, p, { isSuperuser: superuser, projectPermissions: pp });
 
-        // Check if user can create projects (superuser or has project.manage in any project)
+        // Check if user can create projects (superuser or is project_owner in any project)
         const canCreateProject = () => {
             if (superuser) return true;
-            if (!pp) return false;
-            // Check if user has project.manage permission in any project
-            for (const perms of Object.values(pp)) {
-                if (perms && perms.includes(PERMISSIONS.project.manage)) {
+            const pr = user?.project_roles;
+            if (!pr) return false;
+            // Check if user is project_owner in any project
+            for (const roleKey of Object.values(pr)) {
+                if (roleKey === 'project_owner') {
                     return true;
                 }
             }

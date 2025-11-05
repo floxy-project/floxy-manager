@@ -64,17 +64,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Build project_permissions map from projects response
       const projectPermissions: Record<string, string[]> = {};
+      const projectRoles: Record<string, string> = {};
       if (projects.projects) {
         for (const projInfo of projects.projects) {
           projectPermissions[String(projInfo.project.id)] = projInfo.permissions || [];
+          if (projInfo.role) {
+            projectRoles[String(projInfo.project.id)] = projInfo.role.key;
+          }
         }
       }
 
-      // Merge user data with project permissions
+      // Merge user data with project permissions and roles
       const userWithPermissions: User = {
         ...user,
         is_superuser: projects.is_superuser || user.is_superuser,
         project_permissions: projectPermissions,
+        project_roles: projectRoles,
       };
 
       setUser(userWithPermissions);

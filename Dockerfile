@@ -24,6 +24,8 @@ RUN apk add --no-cache git
 # Copy go mod files
 COPY go.mod go.sum ./
 
+ENV GOPRIVATE github.com/rom8726/floxy*
+
 # Download dependencies
 RUN go mod download
 
@@ -57,11 +59,6 @@ EXPOSE 3001
 
 # Set environment variables
 ENV PORT=3001
-ENV DB_HOST=localhost
-ENV DB_PORT=5435
-ENV DB_NAME=floxy
-ENV DB_USER=floxy
-ENV DB_PASSWORD=password
 
 # Run the application
 CMD ["./main"]
