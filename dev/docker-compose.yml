@@ -30,10 +30,18 @@ services:
 
   floxym:
     container_name: floxym
+    # Use pre-built image if it exists (from make dev-build-backend), otherwise build
+    image: ${NAMESPACE:-floxym}_floxym:latest
     build:
       context: ../
       target: prod
       dockerfile: Dockerfile
+      # Option 1: Use SSH key (recommended for local dev)
+      # Build with: make dev-build-backend
+      # Option 2: Use GitHub Personal Access Token (for CI/CD)
+      # Create a token with 'repo' scope and set it in compose.env, then build with: make dev-build-backend-token
+      args:
+        GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     env_file:
       - compose.env
     ports:
@@ -41,6 +49,7 @@ services:
     command: ["/app/main", "server"]
     volumes:
       - "./secrets:/opt/floxym/secrets"
+      - "./nginx/ssl:/etc/nginx/ssl"
     depends_on:
       floxym-postgresql:
         condition: service_healthy
