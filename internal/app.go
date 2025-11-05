@@ -274,8 +274,8 @@ func (app *App) newAPIServer() (Serverer, error) {
 			WriteTimeout: cfg.WriteTimeout,
 			IdleTimeout:  cfg.IdleTimeout,
 			Handler:      handler,
-			CertFile:     "",
-			KeyFile:      "",
+			CertFile:     cfg.CertFile,
+			KeyFile:      cfg.KeyFile,
 		}, nil
 	}
 
