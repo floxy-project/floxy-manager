@@ -183,8 +183,8 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/rom8726/di v1.1.1 h1:aPTTPpZTBOEIQYHi1XJlWwU1PQ3jo0aE3HNUgfaAJ4E=
 github.com/rom8726/di v1.1.1/go.mod h1:0SBniZSi3tKTBw3qi1RA+Ui+gpgIWTlVHLQtQsG4X7o=
-github.com/rom8726/floxy-pro v1.4.0 h1:7oL4HeMagDlgJCSPPj5Fdaz87E0ZlaSQ3/d66nwIy+0=
-github.com/rom8726/floxy-pro v1.4.0/go.mod h1:/Gb1av4Azgoe5owo1J0aaJctoNdsmRT2xZgKF1SkDrc=
+github.com/rom8726/floxy-pro v1.4.1 h1:Zh7pcT/7g69r5xVBVxW9w+HDW/A6LdGTXL/1iiz8D9o=
+github.com/rom8726/floxy-pro v1.4.1/go.mod h1:/Gb1av4Azgoe5owo1J0aaJctoNdsmRT2xZgKF1SkDrc=
 github.com/russellhaering/goxmldsig v1.4.0 h1:8UcDh/xGyQiyrW+Fq5t8f+l2DLB1+zlhYzkPUJ7Qhys=
 github.com/russellhaering/goxmldsig v1.4.0/go.mod h1:gM4MDENBQf7M+V824SGfyIUVFWydB7n0KkEubVJl+Tw=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=

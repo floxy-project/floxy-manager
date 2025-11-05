@@ -53,13 +53,17 @@ const (
 	ctxTimeout = 10 * time.Second
 )
 
+type Serverer interface {
+	ListenAndServe(ctx context.Context) error
+}
+
 type App struct {
 	Config *config.Config
 	Logger *slog.Logger
 
 	PostgresPool *pgxpool.Pool
 
-	APIServer *httpserver.Server
+	APIServer Serverer
 
 	container *di.Container
 	diApp     *di.App
@@ -229,7 +233,7 @@ func (app *App) registerComponents() {
 	app.registerComponent(ratelimiter2fa.New)
 }
 
-func (app *App) newAPIServer() (*httpserver.Server, error) {
+func (app *App) newAPIServer() (Serverer, error) {
 	cfg := app.Config.APIServer
 
 	var tokenizerSrv contract.Tokenizer
@@ -261,6 +265,18 @@ func (app *App) newAPIServer() (*httpserver.Server, error) {
 	lis, err := net.Listen("tcp", cfg.Addr) //nolint:noctx // need to refactor
 	if err != nil {
 		return nil, fmt.Errorf("listen %q: %w", cfg.Addr, err)
+	}
+
+	if cfg.UseTLS {
+		return &httpserver.ServerTLS{
+			Listener:     lis,
+			ReadTimeout:  cfg.ReadTimeout,
+			WriteTimeout: cfg.WriteTimeout,
+			IdleTimeout:  cfg.IdleTimeout,
+			Handler:      handler,
+			CertFile:     "",
+			KeyFile:      "",
+		}, nil
 	}
 
 	return &httpserver.Server{

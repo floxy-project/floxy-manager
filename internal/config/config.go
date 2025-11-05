@@ -61,6 +61,9 @@ type Server struct {
 	ReadTimeout  time.Duration `default:"15s"    envconfig:"READ_TIMEOUT"`
 	WriteTimeout time.Duration `default:"30s"    envconfig:"WRITE_TIMEOUT"`
 	IdleTimeout  time.Duration `default:"60s"    envconfig:"IDLE_TIMEOUT"`
+	CertFile     string        `default:""       envconfig:"CERT_FILE"`
+	KeyFile      string        `default:""       envconfig:"KEY_FILE"`
+	UseTLS       bool          `default:"false"  envconfig:"USE_TLS"`
 }
 
 // SAMLConfig holds SAML configuration.
