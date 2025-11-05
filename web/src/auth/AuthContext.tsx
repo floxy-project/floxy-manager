@@ -52,6 +52,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setHasTmpPassword(false);
   }, []);
 
+  // Listen for logout events from API interceptors
+  useEffect(() => {
+    const handleLogout = () => {
+      logout();
+    };
+    
+    window.addEventListener('auth:logout', handleLogout);
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+    };
+  }, [logout]);
+
   const loadUserData = useCallback(async () => {
     try {
       const [userResponse, projectsResponse] = await Promise.all([

@@ -36,10 +36,42 @@ export const authFetch = async (
     ...(options.headers || {}),
   };
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     headers,
   });
+
+  // Handle 401 Unauthorized
+  if (response.status === 401) {
+    // Don't redirect if we're already on login page or auth endpoints
+    const currentPath = window.location.pathname;
+    const isAuthEndpoint = url.includes('/api/v1/auth/');
+    
+    console.log('[authFetch] 401 error detected', {
+      currentPath,
+      url,
+      isAuthEndpoint,
+      willRedirect: !currentPath.includes('/login') && !isAuthEndpoint
+    });
+    
+    if (!currentPath.includes('/login') && !isAuthEndpoint) {
+      console.log('[authFetch] Logging out and redirecting to login');
+      
+      // Clear tokens immediately
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authToken');
+      
+      // Dispatch custom event to notify AuthContext
+      window.dispatchEvent(new CustomEvent('auth:logout', { detail: { reason: 'unauthorized' } }));
+      
+      // Use replace instead of href to avoid back button issues
+      // Use immediate redirect without setTimeout
+      window.location.replace('/login');
+    }
+  }
+
+  return response;
 };
 
 // Types for API requests/responses
@@ -174,6 +206,43 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Don't redirect if we're already on login page or auth endpoints
+      const currentPath = window.location.pathname;
+      const requestUrl = error.config?.url || '';
+      const isAuthEndpoint = requestUrl.includes('/api/v1/auth/');
+      
+      console.log('[API Interceptor] 401 error detected', {
+        currentPath,
+        requestUrl,
+        isAuthEndpoint,
+        willRedirect: !currentPath.includes('/login') && !isAuthEndpoint
+      });
+      
+      if (!currentPath.includes('/login') && !isAuthEndpoint) {
+        console.log('[API Interceptor] Logging out and redirecting to login');
+        
+        // Clear tokens immediately
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authToken');
+        
+        // Dispatch custom event to notify AuthContext
+        window.dispatchEvent(new CustomEvent('auth:logout', { detail: { reason: 'unauthorized' } }));
+        
+        // Use replace instead of href to avoid back button issues
+        // Use immediate redirect without setTimeout
+        window.location.replace('/login');
+      }
+    }
     return Promise.reject(error);
   }
 );

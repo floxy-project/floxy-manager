@@ -33,11 +33,19 @@ export const Tenants: React.FC = () => {
       try {
         const response = await authFetch('/api/v1/tenants');
         if (!response.ok) {
+          // If 401, the interceptor should have already handled logout and redirect
+          if (response.status === 401) {
+            return; // Don't process further, redirect is happening
+          }
           throw new Error('Failed to fetch tenants');
         }
         const data = await response.json();
         setTenants(data);
       } catch (err) {
+        // Don't set error for 401 as redirect is happening
+        if (err instanceof Error && err.message.includes('401')) {
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
