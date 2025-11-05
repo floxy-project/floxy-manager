@@ -40,6 +40,11 @@ func (p *LocalAuthProvider) Authenticate(ctx context.Context, username, password
 		}
 	}
 
+	// Skip external users (LDAP users) - they should be authenticated by LDAP provider
+	if user.IsExternal {
+		return nil, domain.ErrInvalidPassword
+	}
+
 	// Check if the user is active
 	if !user.IsActive {
 		return nil, domain.ErrInactiveUser
