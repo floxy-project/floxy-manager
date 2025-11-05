@@ -2,6 +2,7 @@ package permissions
 
 import (
 	"context"
+	"log/slog"
 
 	etx "github.com/rom8726/floxy-manager/internal/context"
 	"github.com/rom8726/floxy-manager/internal/contract"
@@ -49,22 +50,49 @@ func (s *Service) HasProjectPermission(
 		return true, nil
 	}
 
-	// Verify the project exists (preserve current behavior and error mapping)
-	if _, err := s.projects.GetByID(ctx, projectID); err != nil {
-		return false, err
-	}
-
 	userID := etx.UserID(ctx)
 	if userID == 0 {
+		slog.Debug("HasProjectPermission: userID is 0", "project_id", projectID, "permission", permKey)
 		return false, domain.ErrUserNotFound
 	}
 
-	roleID, err := s.member.GetForUserProject(ctx, userID, projectID)
-	if err != nil || roleID == "" {
+	// Verify the project exists (preserve current behavior and error mapping)
+	if _, err := s.projects.GetByID(ctx, projectID); err != nil {
+		slog.Debug("HasProjectPermission: project not found", "error", err, "project_id", projectID, "user_id", userID, "permission", permKey)
 		return false, err
 	}
 
-	return s.perms.RoleHasPermission(ctx, roleID, permKey)
+	roleID, err := s.member.GetForUserProject(ctx, userID, projectID)
+	if err != nil {
+		slog.Debug("HasProjectPermission: failed to get membership", "error", err, "project_id", projectID, "user_id", userID, "permission", permKey)
+		return false, err
+	}
+	if roleID == "" {
+		slog.Debug("HasProjectPermission: no membership found", "project_id", projectID, "user_id", userID, "permission", permKey)
+		return false, nil
+	}
+
+	hasPerm, err := s.perms.RoleHasPermission(ctx, roleID, permKey)
+	if err != nil {
+		slog.Error("HasProjectPermission: failed to check role permission",
+			"error", err,
+			"project_id", projectID,
+			"user_id", userID,
+			"role_id", roleID,
+			"permission", permKey,
+		)
+		return false, err
+	}
+
+	slog.Debug("HasProjectPermission: result",
+		"project_id", projectID,
+		"user_id", userID,
+		"role_id", roleID,
+		"permission", permKey,
+		"has_permission", hasPerm,
+	)
+
+	return hasPerm, nil
 }
 
 // CanAccessProject checks if a user can access a project.
@@ -206,7 +234,8 @@ func (s *Service) GetMyProjectPermissions(
 		// Check membership directly, do not use superuser bypass here
 		roleID, mErr := s.member.GetForUserProject(ctx, userID, project.ID)
 		if mErr != nil {
-			return nil, mErr
+			// Continue to next project if membership not found (expected for projects user doesn't belong to)
+			continue
 		}
 
 		if roleID == "" {
@@ -219,16 +248,41 @@ func (s *Service) GetMyProjectPermissions(
 		for _, key := range permKeys {
 			has, perr := s.perms.RoleHasPermission(ctx, roleID, key)
 			if perr != nil {
+				slog.Error("Failed to check role permission",
+					"error", perr,
+					"role_id", roleID,
+					"permission", key,
+					"project_id", project.ID,
+					"user_id", userID,
+				)
 				return nil, perr
 			}
 
 			if has {
+				slog.Debug("Permission granted",
+					"role_id", roleID,
+					"permission", key,
+					"project_id", project.ID,
+					"user_id", userID,
+				)
 				granted = append(granted, key)
 			}
 		}
 
 		if len(granted) > 0 {
+			slog.Debug("Project permissions found",
+				"project_id", project.ID,
+				"user_id", userID,
+				"role_id", roleID,
+				"permissions_count", len(granted),
+			)
 			result[project.ID] = granted
+		} else {
+			slog.Debug("No permissions found for project",
+				"project_id", project.ID,
+				"user_id", userID,
+				"role_id", roleID,
+			)
 		}
 	}
 

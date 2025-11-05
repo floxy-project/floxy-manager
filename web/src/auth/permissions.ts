@@ -75,11 +75,20 @@ export function useRBAC(projectId?: string | number) {
             return perms && perms.includes(PERMISSIONS.project.manage);
         };
 
+        // Check if user can manage a specific project
+        const canManageProject = (projId?: string | number) => {
+            if (superuser) return true;
+            if (!projId || !pp) return false;
+            // Check if user has project.manage permission in this specific project
+            const perms = pp[String(projId)];
+            return perms && perms.includes(PERMISSIONS.project.manage);
+        };
+
         return {
             isSuperuser: superuser,
             has: check,
             canViewProject: () => check(PERMISSIONS.project.view),
-            canManageProject: () => check(PERMISSIONS.project.manage),
+            canManageProject,
             canViewAudit: () => check(PERMISSIONS.audit.view),
             canManageMembership: () => check(PERMISSIONS.membership.manage),
             canCreateProject,

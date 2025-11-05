@@ -218,34 +218,33 @@ func (h *ProjectsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	projectID := domain.ProjectID(id)
 
-	// Check if user is superuser or project_owner of this project
+	// Check if user is superuser or has project.manage permission for this project
 	isSuper := appcontext.IsSuper(r.Context())
 	if !isSuper {
 		userID := appcontext.UserID(r.Context())
-		if userID == 0 {
-			respondError(w, http.StatusUnauthorized, "Unauthorized")
-			return
-		}
-
-		// Check if user is project_owner of this project
-		roleID, err := h.membershipsRepo.GetForUserProject(r.Context(), userID, projectID)
-		if err != nil || roleID == "" {
-			respondError(w, http.StatusForbidden, "Only superusers or project owners can delete projects")
-			return
-		}
-
-		// Get role to check if it's project_owner
-		role, err := h.rolesRepo.GetByID(r.Context(), domain.RoleID(roleID))
+		// Check if user has project.manage permission for this project
+		hasManage, err := h.permissionsSrv.HasProjectPermission(r.Context(), projectID, domain.PermProjectManage)
 		if err != nil {
-			slog.Error("Failed to get role", "error", err, "role_id", roleID)
-			respondError(w, http.StatusInternalServerError, "Failed to verify permissions")
+			slog.Error("Failed to check project.manage permission for delete",
+				"error", err,
+				"user_id", userID,
+				"project_id", projectID,
+			)
+			respondError(w, http.StatusForbidden, "Only superusers or users with project.manage permission can delete projects")
 			return
 		}
-
-		if role.Key != "project_owner" {
-			respondError(w, http.StatusForbidden, "Only superusers or project owners can delete projects")
+		if !hasManage {
+			slog.Warn("User denied delete project - no project.manage permission",
+				"user_id", userID,
+				"project_id", projectID,
+			)
+			respondError(w, http.StatusForbidden, "Only superusers or users with project.manage permission can delete projects")
 			return
 		}
+		slog.Debug("User has project.manage permission for delete",
+			"user_id", userID,
+			"project_id", projectID,
+		)
 	}
 
 	err = h.projectsRepo.Delete(r.Context(), projectID)
@@ -293,12 +292,30 @@ func (h *ProjectsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	// Check if user is superuser or has project.manage permission for this project
 	isSuper := appcontext.IsSuper(r.Context())
 	if !isSuper {
+		userID := appcontext.UserID(r.Context())
 		// Check if user has project.manage permission for this project
 		hasManage, err := h.permissionsSrv.HasProjectPermission(r.Context(), projectID, domain.PermProjectManage)
-		if err != nil || !hasManage {
-			respondError(w, http.StatusForbidden, "Only superusers or project owners can update projects")
+		if err != nil {
+			slog.Error("Failed to check project.manage permission for update",
+				"error", err,
+				"user_id", userID,
+				"project_id", projectID,
+			)
+			respondError(w, http.StatusForbidden, "Only superusers or users with project.manage permission can update projects")
 			return
 		}
+		if !hasManage {
+			slog.Warn("User denied update project - no project.manage permission",
+				"user_id", userID,
+				"project_id", projectID,
+			)
+			respondError(w, http.StatusForbidden, "Only superusers or users with project.manage permission can update projects")
+			return
+		}
+		slog.Debug("User has project.manage permission for update",
+			"user_id", userID,
+			"project_id", projectID,
+		)
 	}
 
 	var req struct {

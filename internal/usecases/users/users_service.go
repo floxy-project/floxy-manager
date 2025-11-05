@@ -135,15 +135,8 @@ func (s *UsersService) GetByID(ctx context.Context, id domain.UserID) (domain.Us
 }
 
 func (s *UsersService) List(ctx context.Context) ([]domain.User, error) {
-	currUser, err := s.usersRepo.GetByID(ctx, appcontext.UserID(ctx))
-	if err != nil {
-		return nil, fmt.Errorf("get current user by id: %w", err)
-	}
-
-	if !currUser.IsSuperuser {
-		return nil, domain.ErrPermissionDenied
-	}
-
+	// Permission check is performed in the handler layer
+	// This allows for more flexible permission checks (e.g., membership.manage permission)
 	return s.usersRepo.List(ctx)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -218,8 +219,19 @@ where rp.role_id = $1 and p.key = $2
 
 	var has bool
 	if err := exec.QueryRow(ctx, query, roleID, string(key)).Scan(&has); err != nil {
+		slog.Error("RoleHasPermission: database query failed",
+			"error", err,
+			"role_id", roleID,
+			"permission", key,
+		)
 		return false, fmt.Errorf("role has permission: %w", err)
 	}
+
+	slog.Debug("RoleHasPermission: result",
+		"role_id", roleID,
+		"permission", key,
+		"has_permission", has,
+	)
 
 	return has, nil
 }

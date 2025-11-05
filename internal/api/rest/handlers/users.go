@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -394,23 +395,44 @@ func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Check if user has membership.manage permission in any project
-		allProjects, err := h.projectsRepo.List(r.Context())
+		// Check if user has membership.manage permission in any of their projects
+		projectPermissions, err := h.permissionsService.GetMyProjectPermissions(r.Context())
 		if err != nil {
+			slog.Error("Failed to get project permissions", "error", err, "user_id", userID)
 			respondError(w, http.StatusInternalServerError, "Failed to check permissions")
 			return
 		}
 
+		slog.Debug("Checking user permissions for list users",
+			"user_id", userID,
+			"projects_count", len(projectPermissions),
+		)
+
 		hasMembershipManage := false
-		for _, project := range allProjects {
-			hasManage, err := h.permissionsService.HasProjectPermission(r.Context(), project.ID, domain.PermMembershipManage)
-			if err == nil && hasManage {
-				hasMembershipManage = true
+		for projectID, perms := range projectPermissions {
+			slog.Debug("Checking project permissions",
+				"user_id", userID,
+				"project_id", projectID,
+				"permissions", perms,
+			)
+			for _, perm := range perms {
+				if perm == domain.PermMembershipManage {
+					slog.Info("User has membership.manage permission", "user_id", userID, "project_id", projectID, "permission", perm)
+					hasMembershipManage = true
+					break
+				}
+			}
+			if hasMembershipManage {
 				break
 			}
 		}
 
 		if !hasMembershipManage {
+			slog.Warn("User denied access to list users",
+				"user_id", userID,
+				"project_permissions_count", len(projectPermissions),
+				"project_permissions", projectPermissions,
+			)
 			respondError(w, http.StatusForbidden, "Only superusers or users with membership.manage permission can list users")
 			return
 		}
