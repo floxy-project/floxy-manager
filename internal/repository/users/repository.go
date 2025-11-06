@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rom8726/floxy-manager/internal/domain"
+	"github.com/rom8726/floxy-manager/internal/repository/auditlog"
 	"github.com/rom8726/floxy-manager/pkg/db"
 )
 
@@ -39,7 +41,7 @@ RETURNING id, username, email, password_hash, is_superuser,
 		userDTO.Email,
 		userDTO.PasswordHash,
 		userDTO.IsSuperuser,
-		true, // IsActive defaults to true
+		true,
 		time.Now(),
 		userDTO.IsTmpPassword,
 		userDTO.IsExternal,
@@ -57,6 +59,10 @@ RETURNING id, username, email, password_hash, is_superuser,
 	)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("insert user: %w", err)
+	}
+
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityUser, strconv.Itoa(int(user.ID)), domain.ActionCreate); err != nil {
+		return domain.User{}, fmt.Errorf("write audit log: %w", err)
 	}
 
 	return user.toDomain(), nil
@@ -200,6 +206,10 @@ WHERE id = $10`
 		return domain.ErrEntityNotFound
 	}
 
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityUser, strconv.Itoa(int(user.ID)), domain.ActionUpdate); err != nil {
+		return fmt.Errorf("write audit log: %w", err)
+	}
+
 	return nil
 }
 
@@ -213,6 +223,10 @@ WHERE id = $1`
 	_, err := executor.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("delete user: %w", err)
+	}
+
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityUser, strconv.Itoa(int(id)), domain.ActionDelete); err != nil {
+		return fmt.Errorf("write audit log: %w", err)
 	}
 
 	return nil

@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rom8726/floxy-manager/internal/domain"
+	"github.com/rom8726/floxy-manager/internal/repository/auditlog"
 	"github.com/rom8726/floxy-manager/pkg/db"
 )
 
@@ -64,6 +66,10 @@ RETURNING id`
 	).Scan(&id)
 	if err != nil {
 		return 0, fmt.Errorf("insert project: %w", err)
+	}
+
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id), domain.ActionCreate); err != nil {
+		return 0, fmt.Errorf("write audit log: %w", err)
 	}
 
 	return domain.ProjectID(id), nil
@@ -144,6 +150,10 @@ WHERE id = $3`
 		return fmt.Errorf("failed to update project: %w", err)
 	}
 
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id.Int()), domain.ActionUpdate); err != nil {
+		return fmt.Errorf("write audit log: %w", err)
+	}
+
 	return nil
 }
 
@@ -162,7 +172,6 @@ WHERE id = $1 AND archived_at IS NULL`
 
 	rowsAffected := result.RowsAffected()
 	if rowsAffected == 0 {
-		// Check if the project exists
 		exists, err := r.projectExists(ctx, id)
 		if err != nil {
 			return fmt.Errorf("check if project exists: %w", err)
@@ -171,8 +180,11 @@ WHERE id = $1 AND archived_at IS NULL`
 		if !exists {
 			return domain.ErrEntityNotFound
 		}
-		// Project exists but was already archived
 		return nil
+	}
+
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id.Int()), domain.ActionArchive); err != nil {
+		return fmt.Errorf("write audit log: %w", err)
 	}
 
 	return nil

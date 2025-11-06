@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rom8726/floxy-manager/internal/domain"
+	"github.com/rom8726/floxy-manager/internal/repository/auditlog"
 	"github.com/rom8726/floxy-manager/pkg/db"
 )
 
@@ -636,6 +637,10 @@ ON CONFLICT (project_id, workflow_definition_id) DO NOTHING`
 	_, err = executor.Exec(ctx, assignQuery, projectID.Int(), workflowID)
 	if err != nil {
 		return "", fmt.Errorf("assign workflow to project: %w", err)
+	}
+
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityWorkflow, workflowID, domain.ActionCreate); err != nil {
+		return "", fmt.Errorf("write audit log: %w", err)
 	}
 
 	return workflowID, nil

@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rom8726/floxy-manager/internal/domain"
+	"github.com/rom8726/floxy-manager/internal/repository/auditlog"
 	"github.com/rom8726/floxy-manager/pkg/db"
 )
 
@@ -87,6 +89,10 @@ func (r *Repository) Create(ctx context.Context, name string) (domain.Tenant, er
 		return domain.Tenant{}, fmt.Errorf("collect tenant: %w", err)
 	}
 
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityTenant, strconv.Itoa(model.ID), domain.ActionCreate); err != nil {
+		return domain.Tenant{}, fmt.Errorf("write audit log: %w", err)
+	}
+
 	return model.toDomain(), nil
 }
 
@@ -109,6 +115,10 @@ func (r *Repository) Update(ctx context.Context, id domain.TenantID, name string
 		return domain.Tenant{}, fmt.Errorf("collect tenant: %w", err)
 	}
 
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityTenant, strconv.Itoa(id.Int()), domain.ActionUpdate); err != nil {
+		return domain.Tenant{}, fmt.Errorf("write audit log: %w", err)
+	}
+
 	return model.toDomain(), nil
 }
 
@@ -124,6 +134,10 @@ func (r *Repository) Delete(ctx context.Context, id domain.TenantID) error {
 
 	if result.RowsAffected() == 0 {
 		return domain.ErrEntityNotFound
+	}
+
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityTenant, strconv.Itoa(id.Int()), domain.ActionDelete); err != nil {
+		return fmt.Errorf("write audit log: %w", err)
 	}
 
 	return nil

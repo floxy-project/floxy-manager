@@ -38,6 +38,7 @@ type Router struct {
 	permissionsService contract.PermissionsService
 	tokenizer          contract.Tokenizer
 	usersService       contract.UsersUseCase
+	pool               *pgxpool.Pool
 }
 
 func NewRouter(
@@ -178,7 +179,8 @@ func NewRouter(
 	router.GET("/api/v1/ldap/statistics", wrapHandler(ldapHandler.GetLDAPStatistics))
 
 	floxyMux := floxyServer.Mux()
-	protectedFloxyMux := middlewares.RequireAuthMiddleware(tokenizer, usersService)(floxyMux)
+	auditFloxyMux := middlewares.AuditMiddleware(pool)(floxyMux)
+	protectedFloxyMux := middlewares.RequireAuthMiddleware(tokenizer, usersService)(auditFloxyMux)
 
 	staticMux := http.NewServeMux()
 	staticFS := http.FileServer(http.Dir("./web/dist/"))
@@ -201,6 +203,7 @@ func NewRouter(
 		permissionsService: permissionsService,
 		tokenizer:          tokenizer,
 		usersService:       usersService,
+		pool:               pool,
 	}, nil
 }
 
@@ -208,7 +211,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 
 	if strings.HasPrefix(path, "/api/v1/") {
-		r.router.ServeHTTP(w, req)
+		auditHandler := middlewares.AuditMiddleware(r.pool)(r.router)
+		auditHandler.ServeHTTP(w, req)
 		return
 	}
 
