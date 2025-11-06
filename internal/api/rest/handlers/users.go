@@ -417,7 +417,8 @@ func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 			)
 			for _, perm := range perms {
 				if perm == domain.PermMembershipManage {
-					slog.Info("User has membership.manage permission", "user_id", userID, "project_id", projectID, "permission", perm)
+					slog.Debug("User has membership.manage permission",
+						"user_id", userID, "project_id", projectID, "permission", perm)
 					hasMembershipManage = true
 					break
 				}

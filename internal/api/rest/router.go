@@ -17,6 +17,7 @@ import (
 	human_decision "github.com/rom8726/floxy-pro/plugins/api/human-decision"
 
 	"github.com/rom8726/floxy-manager/internal/api/rest/handlers"
+	"github.com/rom8726/floxy-manager/internal/api/rest/middlewares"
 	appcontext "github.com/rom8726/floxy-manager/internal/context"
 	"github.com/rom8726/floxy-manager/internal/contract"
 	"github.com/rom8726/floxy-manager/internal/domain"
@@ -35,10 +36,14 @@ type Router struct {
 	workflowsHandler   *handlers.WorkflowsHandler
 	usersHandler       *handlers.UsersHandler
 	permissionsService contract.PermissionsService
+	tokenizer          contract.Tokenizer
+	usersService       contract.UsersUseCase
 }
 
 func NewRouter(
 	pool *pgxpool.Pool,
+	tokenizer contract.Tokenizer,
+	frontendURL string,
 	usersService contract.UsersUseCase,
 	tenantsRepo contract.TenantsRepository,
 	projectsRepo contract.ProjectsRepository,
@@ -49,19 +54,30 @@ func NewRouter(
 	membershipsSrv contract.MembershipsUseCase,
 	ldapUseCase contract.LDAPSyncUseCase,
 	settingsUseCase contract.SettingsUseCase,
-	frontendURL string,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
 
-	humanDecisionPlugin := human_decision.New(engine, store, func(*http.Request) (string, error) {
-		return "admin", nil
+	humanDecisionPlugin := human_decision.New(engine, store, func(req *http.Request) (string, error) {
+		username := appcontext.Username(req.Context())
+		if username == "" {
+			return "", errors.New("username not found in context")
+		}
+		return username, nil
 	})
 	cancelPlugin := cancel.New(engine, func(req *http.Request) (string, error) {
-		return "admin", nil
+		username := appcontext.Username(req.Context())
+		if username == "" {
+			return "", errors.New("username not found in context")
+		}
+		return username, nil
 	})
 	abortPlugin := abort.New(engine, func(req *http.Request) (string, error) {
-		return "admin", nil
+		username := appcontext.Username(req.Context())
+		if username == "" {
+			return "", errors.New("username not found in context")
+		}
+		return username, nil
 	})
 	dlqPlugin := dlq.New(engine, store)
 	cleanupPlugin := cleanup.New(store)
@@ -162,6 +178,7 @@ func NewRouter(
 	router.GET("/api/v1/ldap/statistics", wrapHandler(ldapHandler.GetLDAPStatistics))
 
 	floxyMux := floxyServer.Mux()
+	protectedFloxyMux := middlewares.RequireAuthMiddleware(tokenizer, usersService)(floxyMux)
 
 	staticMux := http.NewServeMux()
 	staticFS := http.FileServer(http.Dir("./web/dist/"))
@@ -171,7 +188,7 @@ func NewRouter(
 
 	return &Router{
 		router:             router,
-		floxyMux:           floxyMux,
+		floxyMux:           protectedFloxyMux,
 		staticMux:          staticMux,
 		authHandler:        authHandler,
 		passwordHandler:    passwordHandler,
@@ -182,6 +199,8 @@ func NewRouter(
 		workflowsHandler:   workflowsHandler,
 		usersHandler:       usersHandler,
 		permissionsService: permissionsService,
+		tokenizer:          tokenizer,
+		usersService:       usersService,
 	}, nil
 }
 
