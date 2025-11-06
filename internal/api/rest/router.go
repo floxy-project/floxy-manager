@@ -55,6 +55,7 @@ func NewRouter(
 	membershipsSrv contract.MembershipsUseCase,
 	ldapUseCase contract.LDAPSyncUseCase,
 	settingsUseCase contract.SettingsUseCase,
+	auditLogRepo contract.AuditLogRepository,
 ) (*Router, error) {
 	store := floxy.NewStore(pool)
 	engine := floxy.NewEngine(pool)
@@ -103,6 +104,7 @@ func NewRouter(
 	usersHandler := handlers.NewUsersHandler(usersService, projectsRepo, permissionsService)
 	membershipsHandler := handlers.NewMembershipsHandler(membershipsSrv, usersService, permissionsService)
 	ldapHandler := handlers.NewLDAPHandler(ldapUseCase, settingsUseCase)
+	auditLogHandler := handlers.NewAuditLogHandler(auditLogRepo, permissionsService)
 
 	router.POST("/api/v1/auth/login", wrapHandler(authHandler.Login))
 	router.POST("/api/v1/auth/refresh", wrapHandler(authHandler.Refresh))
@@ -177,6 +179,8 @@ func NewRouter(
 	router.GET("/api/v1/ldap/sync/logs", wrapHandler(ldapHandler.GetLDAPSyncLogs))
 	router.GET("/api/v1/ldap/sync/logs/:id", wrapHandler(ldapHandler.GetLDAPSyncLogDetails))
 	router.GET("/api/v1/ldap/statistics", wrapHandler(ldapHandler.GetLDAPStatistics))
+
+	router.GET("/api/v1/audit-log", wrapHandler(auditLogHandler.List))
 
 	floxyMux := floxyServer.Mux()
 	auditFloxyMux := middlewares.AuditMiddleware(pool)(floxyMux)

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import logoImage from '../assets/floxy_logo.png';
 import { useAuth } from '../auth/AuthContext';
+import { useRBAC } from '../auth/permissions';
 import { Breadcrumbs } from './Breadcrumbs';
 
 interface TenantProjectLayoutProps {
@@ -13,6 +14,7 @@ export const TenantProjectLayout: React.FC<TenantProjectLayoutProps> = ({ childr
   const navigate = useNavigate();
   const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
   const { isAuthenticated, user, logout } = useAuth();
+  const rbac = useRBAC(projectId);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(36);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -273,6 +275,17 @@ export const TenantProjectLayout: React.FC<TenantProjectLayoutProps> = ({ childr
                 </svg>
               }
             />
+            {(rbac.isSuperuser || rbac.canViewAudit()) && (
+              <NavLink 
+                to="/audit-log" 
+                label="Audit Log"
+                icon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                }
+              />
+            )}
           </nav>
 
           <div className="p-2 border-t border-slate-200/50 dark:border-slate-700/50">

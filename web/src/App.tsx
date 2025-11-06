@@ -12,6 +12,7 @@ import { InstanceDetail } from './pages/InstanceDetail';
 import { Stats } from './pages/Stats';
 import { DLQ } from './pages/DLQ';
 import { DLQDetail } from './pages/DLQDetail';
+import { AuditLog } from './pages/AuditLog';
 import { Login } from './pages/Login';
 import { ChangePassword } from './pages/ChangePassword';
 import { TwoFAVerify } from './pages/TwoFAVerify';
@@ -108,6 +109,7 @@ function App() {
               <Route path="dlq" element={<DLQ />} />
               <Route path="dlq/:id" element={<DLQDetail />} />
               <Route path="memberships" element={<Memberships />} />
+              <Route path="audit-log" element={<AuditLog />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </TenantProjectLayout>

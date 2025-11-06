@@ -15,6 +15,7 @@ import (
 	"github.com/rom8726/floxy-manager/internal/config"
 	"github.com/rom8726/floxy-manager/internal/contract"
 	"github.com/rom8726/floxy-manager/internal/domain"
+	"github.com/rom8726/floxy-manager/internal/repository/auditlog"
 	"github.com/rom8726/floxy-manager/internal/repository/ldapsynclogs"
 	"github.com/rom8726/floxy-manager/internal/repository/ldapsyncstats"
 	"github.com/rom8726/floxy-manager/internal/repository/licenses"
@@ -151,6 +152,7 @@ func (app *App) registerComponents() {
 	app.registerComponent(projects.New).Arg(app.PostgresPool)
 	app.registerComponent(users.New).Arg(app.PostgresPool)
 	app.registerComponent(tenants.New).Arg(app.PostgresPool)
+	app.registerComponent(auditlog.New).Arg(app.PostgresPool)
 	app.registerComponent(ldapsyncstats.New).Arg(app.PostgresPool)
 	app.registerComponent(ldapsynclogs.New).Arg(app.PostgresPool)
 	app.registerComponent(licenses.New).Arg(app.PostgresPool)
