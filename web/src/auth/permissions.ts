@@ -69,18 +69,22 @@ export function useRBAC(projectId?: string | number) {
         // Check if user can delete a specific project
         const canDeleteProject = (projId?: string | number) => {
             if (superuser) return true;
-            if (!projId || !pp) return false;
+            // Use projectId from hook if projId not provided
+            const targetProjectId = projId ?? projectId;
+            if (!targetProjectId || !pp) return false;
             // Check if user has project.manage permission in this specific project
-            const perms = pp[String(projId)];
+            const perms = pp[String(targetProjectId)];
             return perms && perms.includes(PERMISSIONS.project.manage);
         };
 
         // Check if user can manage a specific project
         const canManageProject = (projId?: string | number) => {
             if (superuser) return true;
-            if (!projId || !pp) return false;
+            // Use projectId from hook if projId not provided
+            const targetProjectId = projId ?? projectId;
+            if (!targetProjectId || !pp) return false;
             // Check if user has project.manage permission in this specific project
-            const perms = pp[String(projId)];
+            const perms = pp[String(targetProjectId)];
             return perms && perms.includes(PERMISSIONS.project.manage);
         };
 

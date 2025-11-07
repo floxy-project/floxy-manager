@@ -215,8 +215,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 
 	if strings.HasPrefix(path, "/api/v1/") {
-		auditHandler := middlewares.AuditMiddleware(r.pool)(r.router)
-		auditHandler.ServeHTTP(w, req)
+		//auditHandler := middlewares.AuditMiddleware(r.pool)(r.router)
+		//auditHandler.ServeHTTP(w, req)
+
+		r.router.ServeHTTP(w, req)
+
 		return
 	}
 

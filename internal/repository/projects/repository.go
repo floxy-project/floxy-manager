@@ -68,11 +68,12 @@ RETURNING id`
 		return 0, fmt.Errorf("insert project: %w", err)
 	}
 
-	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id), domain.ActionCreate); err != nil {
+	projectID := domain.ProjectID(id)
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id), domain.ActionCreate, projectID); err != nil {
 		return 0, fmt.Errorf("write audit log: %w", err)
 	}
 
-	return domain.ProjectID(id), nil
+	return projectID, nil
 }
 
 func (r *Repository) List(ctx context.Context) ([]domain.Project, error) {
@@ -150,7 +151,7 @@ WHERE id = $3`
 		return fmt.Errorf("failed to update project: %w", err)
 	}
 
-	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id.Int()), domain.ActionUpdate); err != nil {
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id.Int()), domain.ActionUpdate, id); err != nil {
 		return fmt.Errorf("write audit log: %w", err)
 	}
 
@@ -183,7 +184,7 @@ WHERE id = $1 AND archived_at IS NULL`
 		return nil
 	}
 
-	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id.Int()), domain.ActionArchive); err != nil {
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityProject, strconv.Itoa(id.Int()), domain.ActionArchive, id); err != nil {
 		return fmt.Errorf("write audit log: %w", err)
 	}
 

@@ -639,7 +639,7 @@ ON CONFLICT (project_id, workflow_definition_id) DO NOTHING`
 		return "", fmt.Errorf("assign workflow to project: %w", err)
 	}
 
-	if err := auditlog.WriteLog(ctx, executor, domain.EntityWorkflow, workflowID, domain.ActionCreate); err != nil {
+	if err := auditlog.WriteLog(ctx, executor, domain.EntityWorkflow, workflowID, domain.ActionCreate, projectID); err != nil {
 		return "", fmt.Errorf("write audit log: %w", err)
 	}
 

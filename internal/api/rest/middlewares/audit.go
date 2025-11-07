@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	appcontext "github.com/rom8726/floxy-manager/internal/context"
@@ -33,7 +34,16 @@ func AuditMiddleware(executor db.Tx) func(http.Handler) http.Handler {
 
 			action := mapMethodToAction(r.Method)
 
-			_ = auditlog.WriteLog(ctx, executor, entity, entityID, action)
+			// Try to get project_id from context or extract from path
+			projectID := appcontext.ProjectID(ctx)
+			if projectID == 0 {
+				// Try to extract from URL path (e.g., /api/v1/projects/{id}/...)
+				if pid, ok := extractProjectIDFromPath(r.URL.Path); ok {
+					projectID = domain.ProjectID(pid)
+				}
+			}
+
+			_ = auditlog.WriteLog(ctx, executor, entity, entityID, action, projectID)
 
 			next.ServeHTTP(w, r)
 		})
@@ -130,4 +140,16 @@ func extractIDFromPath(path string) string {
 	}
 
 	return ""
+}
+
+func extractProjectIDFromPath(path string) (int, bool) {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for i := 0; i < len(parts)-1; i++ {
+		if parts[i] == "projects" && i+1 < len(parts) {
+			if id, err := strconv.Atoi(parts[i+1]); err == nil && id > 0 {
+				return id, true
+			}
+		}
+	}
+	return 0, false
 }
