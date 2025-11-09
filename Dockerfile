@@ -30,19 +30,27 @@ ENV GOPRIVATE=github.com/rom8726/floxy*
 # Mount secret: --secret id=ssh_key,src=$HOME/.ssh/id_rsa
 # Option 2: Use GitHub Personal Access Token from build arg (for CI/CD)
 # Pass token as build arg: --build-arg GITHUB_TOKEN=your_token
-ARG GITHUB_TOKEN=
+ARG GITHUB_TOKEN
 
 # Configure git and download dependencies in single RUN to access secrets
 RUN --mount=type=secret,id=ssh_key \
     mkdir -p -m 0600 ~/.ssh && \
     if [ -f /run/secrets/ssh_key ]; then \
+        echo "Using SSH key for private repo access" && \
         cp /run/secrets/ssh_key ~/.ssh/id_rsa && \
         chmod 600 ~/.ssh/id_rsa && \
         ssh-keyscan github.com >> ~/.ssh/known_hosts && \
         git config --global url."git@github.com:".insteadOf "https://github.com/"; \
-    elif [ -n "$GITHUB_TOKEN" ]; then \
+    elif [ -n "${GITHUB_TOKEN}" ]; then \
+        echo "Using GitHub token for private repo access" && \
         git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/" && \
         git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "git@github.com:"; \
+    else \
+        echo "ERROR: Neither SSH key nor GITHUB_TOKEN provided!" && \
+        echo "Please provide either:" && \
+        echo "  1. SSH key: --secret id=ssh_key,src=\$HOME/.ssh/id_rsa" && \
+        echo "  2. GitHub token: --build-arg GITHUB_TOKEN=your_token" && \
+        exit 1; \
     fi && \
     go mod download
 

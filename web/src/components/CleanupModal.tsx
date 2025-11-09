@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { Modal } from './Modal';
 import { authFetch } from '../utils/api';
 
@@ -66,10 +67,11 @@ export const CleanupModal: React.FC<CleanupModalProps> = ({
       <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-slate-200 relative">
         <h3 className="text-xl font-bold text-slate-900 pr-8">Clean Old Partitions</h3>
         <button 
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 hover:text-slate-900 text-xl leading-none"
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
           onClick={onClose}
+          aria-label="Close"
         >
-          ×
+          <X className="w-5 h-5" />
         </button>
       </div>
       
