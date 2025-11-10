@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import { LDAPSyncProgress } from '../utils/api';
 
 interface LDAPSyncProgressBarProps {
@@ -11,7 +11,7 @@ interface LDAPSyncProgressBarProps {
   startTime?: string;
 }
 
-const LDAPSyncProgressBar: React.FC<LDAPSyncProgressBarProps> = ({
+const LDAPSyncProgressBar: React.FC<LDAPSyncProgressBarProps> = memo(({
   isRunning,
   progress,
   currentStep,
@@ -20,12 +20,21 @@ const LDAPSyncProgressBar: React.FC<LDAPSyncProgressBarProps> = ({
   estimatedTime,
   startTime,
 }) => {
+  const percent = useMemo(() => Math.round(progress || 0), [progress]);
+  
+  const formattedStartTime = useMemo(() => {
+    if (!startTime) return null;
+    try {
+      return new Date(startTime).toLocaleString();
+    } catch {
+      return null;
+    }
+  }, [startTime]);
+
   if (!isRunning) return null;
 
-  const percent = Math.round(progress || 0);
-
   return (
-    <div className="mb-6 p-4 rounded-lg border-2 border-slate-900 dark:border-[#ff6b35] bg-white dark:bg-[#1e1e1e] max-w-md mx-auto">
+    <div className="p-4">
       <h3 className="text-lg font-semibold mb-3 text-slate-900 dark:text-[#ff6b35]">
         LDAP Users Synchronization
       </h3>
@@ -60,15 +69,17 @@ const LDAPSyncProgressBar: React.FC<LDAPSyncProgressBarProps> = ({
             Estimated time remaining: {estimatedTime}
           </p>
         )}
-        {startTime && (
+        {formattedStartTime && (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Started: {new Date(startTime).toLocaleString()}
+            Started: {formattedStartTime}
           </p>
         )}
       </div>
     </div>
   );
-};
+});
+
+LDAPSyncProgressBar.displayName = 'LDAPSyncProgressBar';
 
 export default LDAPSyncProgressBar;
 

@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { X, Loader2 } from 'lucide-react';
+import { Modal } from '../Modal';
 import apiClient, { LDAPSyncStatus, LDAPSyncProgress, LDAPConfig } from '../../utils/api';
 import LDAPSyncProgressBar from '../LDAPSyncProgressBar';
 
@@ -17,32 +19,10 @@ const LDAPSyncTab: React.FC = () => {
   const [syncProgress, setSyncProgress] = useState<LDAPSyncProgress | null>(null);
   const [progressLoading, setProgressLoading] = useState(false);
 
-  // Fetch LDAP config
-  useEffect(() => {
-    fetchLDAPConfig();
-  }, []);
+  const isRunningRef = useRef(false);
+  const syncStartedRef = useRef(false);
 
-  // Fetch sync status and progress
-  useEffect(() => {
-    fetchSyncStatus();
-    const interval = setInterval(() => {
-      fetchSyncStatus();
-      if (syncStatus?.is_running || syncStarted) {
-        fetchSyncProgress();
-      }
-    }, syncStatus?.is_running || syncStarted ? 1000 : 5000);
-    
-    return () => clearInterval(interval);
-  }, [syncStatus?.is_running, syncStarted]);
-
-  // Reset syncStarted when sync is no longer running
-  useEffect(() => {
-    if (!syncStatus?.is_running && syncStarted) {
-      setSyncStarted(false);
-    }
-  }, [syncStatus?.is_running, syncStarted]);
-
-  const fetchLDAPConfig = async () => {
+  const fetchLDAPConfig = useCallback(async () => {
     try {
       setConfigLoading(true);
       const response = await apiClient.getLDAPConfig();
@@ -66,47 +46,144 @@ const LDAPSyncTab: React.FC = () => {
     } finally {
       setConfigLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSyncStatus = async () => {
+  const fetchSyncStatus = useCallback(async (showLoading = false) => {
     try {
-      setStatusLoading(true);
+      if (showLoading) {
+        setStatusLoading(true);
+      }
       const response = await apiClient.getLDAPSyncStatus();
-      setSyncStatus(response.data);
+      const newStatus = response.data;
+      
+      // Only update state if data actually changed to prevent unnecessary re-renders
+      setSyncStatus(prev => {
+        if (!prev) return newStatus;
+        // Compare key fields to avoid unnecessary updates
+        if (
+          prev.status === newStatus.status &&
+          prev.is_running === newStatus.is_running &&
+          prev.total_users === newStatus.total_users &&
+          prev.synced_users === newStatus.synced_users &&
+          prev.errors === newStatus.errors &&
+          prev.warnings === newStatus.warnings &&
+          prev.last_sync_time === newStatus.last_sync_time &&
+          prev.last_sync_duration === newStatus.last_sync_duration
+        ) {
+          return prev; // Return previous state to prevent re-render
+        }
+        return newStatus;
+      });
     } catch (err: any) {
       console.error('Error fetching LDAP sync status:', err);
-      setSyncStatus({
-        status: '',
-        is_running: false,
-        total_users: 0,
-        synced_users: 0,
-        errors: 0,
-        warnings: 0,
+      setSyncStatus(prev => {
+        const errorStatus = {
+          status: '',
+          is_running: false,
+          total_users: 0,
+          synced_users: 0,
+          errors: 0,
+          warnings: 0,
+        };
+        // Only update if state actually changed
+        if (!prev || prev.is_running !== false) {
+          return errorStatus;
+        }
+        return prev;
       });
     } finally {
-      setStatusLoading(false);
+      if (showLoading) {
+        setStatusLoading(false);
+      }
     }
-  };
+  }, []);
 
-  const fetchSyncProgress = async () => {
+  const fetchSyncProgress = useCallback(async (showLoading = false) => {
     try {
-      setProgressLoading(true);
+      if (showLoading) {
+        setProgressLoading(true);
+      }
       const response = await apiClient.getLDAPSyncProgress();
-      setSyncProgress(response.data);
+      const newProgress = response.data;
+      
+      // Only update state if data actually changed to prevent unnecessary re-renders
+      setSyncProgress(prev => {
+        if (!prev) return newProgress;
+        // Compare key fields to avoid unnecessary updates
+        if (
+          prev.is_running === newProgress.is_running &&
+          prev.progress === newProgress.progress &&
+          prev.current_step === newProgress.current_step &&
+          prev.processed_items === newProgress.processed_items &&
+          prev.total_items === newProgress.total_items &&
+          prev.estimated_time === newProgress.estimated_time &&
+          prev.start_time === newProgress.start_time
+        ) {
+          return prev; // Return previous state to prevent re-render
+        }
+        return newProgress;
+      });
     } catch (err: any) {
       console.error('Error fetching LDAP sync progress:', err);
-      setSyncProgress({
-        is_running: false,
-        progress: 0,
-        processed_items: 0,
-        total_items: 0,
+      setSyncProgress(prev => {
+        const errorProgress = {
+          is_running: false,
+          progress: 0,
+          processed_items: 0,
+          total_items: 0,
+        };
+        // Only update if state actually changed
+        if (!prev || prev.is_running !== false) {
+          return errorProgress;
+        }
+        return prev;
       });
     } finally {
-      setProgressLoading(false);
+      if (showLoading) {
+        setProgressLoading(false);
+      }
     }
-  };
+  }, []);
 
-  const handleSyncUsers = async () => {
+  // Update refs when state changes
+  useEffect(() => {
+    isRunningRef.current = !!syncStatus?.is_running;
+    syncStartedRef.current = syncStarted;
+  }, [syncStatus?.is_running, syncStarted]);
+
+  // Fetch LDAP config
+  useEffect(() => {
+    fetchLDAPConfig();
+  }, [fetchLDAPConfig]);
+
+  // Fetch sync status and progress
+  useEffect(() => {
+    // Initial fetch with loading indicator
+    fetchSyncStatus(true);
+    
+    const intervalId = setInterval(() => {
+      // Periodic fetch without loading indicator to avoid flickering
+      fetchSyncStatus(false);
+      if (isRunningRef.current || syncStartedRef.current) {
+        fetchSyncProgress(false);
+      }
+    }, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [fetchSyncStatus, fetchSyncProgress]);
+
+  // Keep modal open for a few seconds after sync completes to show results
+  useEffect(() => {
+    if (!syncStatus?.is_running && syncStarted) {
+      // Keep modal open for 3 seconds after sync completes to show final results
+      const timer = setTimeout(() => {
+        setSyncStarted(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [syncStatus?.is_running, syncStarted]);
+
+  const handleSyncUsers = useCallback(async () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -117,8 +194,8 @@ const LDAPSyncTab: React.FC = () => {
       setTimeout(() => setSuccess(null), 3000);
       setSyncStarted(true);
       setTimeout(() => {
-        fetchSyncStatus();
-        fetchSyncProgress();
+        fetchSyncStatus(false);
+        fetchSyncProgress(false);
       }, 1000);
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Failed to start user synchronization';
@@ -126,9 +203,9 @@ const LDAPSyncTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchSyncStatus, fetchSyncProgress]);
 
-  const handleCancelSync = async () => {
+  const handleCancelSync = useCallback(async () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -137,17 +214,17 @@ const LDAPSyncTab: React.FC = () => {
       await apiClient.cancelLDAPSync();
       setSuccess('Synchronization cancelled successfully');
       setTimeout(() => setSuccess(null), 3000);
-      fetchSyncStatus();
-      fetchSyncProgress();
+      fetchSyncStatus(false);
+      fetchSyncProgress(false);
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || err.response?.data?.message || 'Failed to cancel synchronization';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchSyncStatus, fetchSyncProgress]);
 
-  const handleTestConnection = async () => {
+  const handleTestConnection = useCallback(async () => {
     setError(null);
     setSuccess(null);
     setLoading(true);
@@ -181,9 +258,9 @@ const LDAPSyncTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [ldapConfig]);
 
-  const formatDate = (dateString: string | null | undefined) => {
+  const formatDate = useCallback((dateString: string | null | undefined) => {
     if (!dateString) return 'Never';
     
     try {
@@ -195,9 +272,9 @@ const LDAPSyncTab: React.FC = () => {
     } catch {
       return 'Never';
     }
-  };
+  }, []);
 
-  const getStatusColor = (status: string | undefined, isRunning: boolean | undefined) => {
+  const getStatusColor = useCallback((status: string | undefined, isRunning: boolean | undefined) => {
     if (isRunning) return 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400';
     if (!status) return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400';
     
@@ -213,20 +290,57 @@ const LDAPSyncTab: React.FC = () => {
       default:
         return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400';
     }
-  };
+  }, []);
 
-  const getStatusLabel = (status: string | undefined, isRunning: boolean | undefined) => {
+  const getStatusLabel = useCallback((status: string | undefined, isRunning: boolean | undefined) => {
     if (isRunning) return 'Running';
     if (!status) return 'Idle';
     return status.charAt(0).toUpperCase() + status.slice(1);
-  };
+  }, []);
 
-  const isLDAPEnabled = ldapConfig?.enabled && ldapConfig?.url && ldapConfig?.bind_dn;
+  const isLDAPEnabled = useMemo(() => {
+    return ldapConfig?.enabled && ldapConfig?.url && ldapConfig?.bind_dn;
+  }, [ldapConfig?.enabled, ldapConfig?.url, ldapConfig?.bind_dn]);
+
+  const isModalOpen = useMemo(() => {
+    return !!syncStatus?.is_running || (syncStarted && !syncStatus?.is_running);
+  }, [syncStatus?.is_running, syncStarted]);
+
+  const handleCloseModal = useCallback(() => {
+    if (!syncStatus?.is_running) {
+      setSyncStarted(false);
+      fetchSyncStatus(false);
+    }
+  }, [syncStatus?.is_running, fetchSyncStatus]);
+
+  // Memoize computed values to prevent unnecessary re-renders
+  const statusColor = useMemo(() => getStatusColor(syncStatus?.status, syncStatus?.is_running), [syncStatus?.status, syncStatus?.is_running]);
+  const statusLabel = useMemo(() => getStatusLabel(syncStatus?.status, syncStatus?.is_running), [syncStatus?.status, syncStatus?.is_running]);
+  const formattedLastSyncTime = useMemo(() => formatDate(syncStatus?.last_sync_time), [syncStatus?.last_sync_time]);
+
+  // Memoize progress bar props to prevent unnecessary re-renders
+  const progressBarProps = useMemo(() => ({
+    isRunning: !!syncProgress?.is_running,
+    progress: typeof syncProgress?.progress === 'number' ? syncProgress.progress : 0,
+    currentStep: syncProgress?.current_step || undefined,
+    processedItems: syncProgress?.processed_items || undefined,
+    totalItems: syncProgress?.total_items || undefined,
+    estimatedTime: syncProgress?.estimated_time || undefined,
+    startTime: syncProgress?.start_time || undefined,
+  }), [
+    syncProgress?.is_running,
+    syncProgress?.progress,
+    syncProgress?.current_step,
+    syncProgress?.processed_items,
+    syncProgress?.total_items,
+    syncProgress?.estimated_time,
+    syncProgress?.start_time,
+  ]);
 
   if (configLoading || statusLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+        <Loader2 className="w-8 h-8 text-slate-600 dark:text-slate-400 animate-spin" />
       </div>
     );
   }
@@ -274,7 +388,7 @@ const LDAPSyncTab: React.FC = () => {
           >
             {loading ? (
               <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Starting...
               </span>
             ) : (
@@ -283,42 +397,63 @@ const LDAPSyncTab: React.FC = () => {
           </button>
         </div>
 
-        {syncStatus?.is_running && (
-          <button
-            onClick={handleCancelSync}
-            disabled={loading || !isLDAPEnabled}
-            className="btn btn-secondary text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
-                Cancelling...
-              </span>
-            ) : (
-              'Cancel Sync'
-            )}
-          </button>
-        )}
       </div>
 
-      {/* Sync Progress */}
-      {syncStatus?.is_running && (
-        progressLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
-          </div>
-        ) : (
-          <LDAPSyncProgressBar
-            isRunning={!!syncProgress?.is_running}
-            progress={typeof syncProgress?.progress === 'number' ? syncProgress.progress : 0}
-            currentStep={syncProgress?.current_step}
-            processedItems={syncProgress?.processed_items}
-            totalItems={syncProgress?.total_items}
-            estimatedTime={syncProgress?.estimated_time}
-            startTime={syncProgress?.start_time || undefined}
-          />
-        )
-      )}
+      {/* Sync Progress Modal */}
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={handleCloseModal}
+      >
+        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-slate-200 relative">
+          <h3 className="text-xl font-bold text-slate-900 pr-8">LDAP Synchronization Progress</h3>
+          {!syncStatus?.is_running && (
+            <button 
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
+              onClick={handleCloseModal}
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+        
+        <div className="px-6 py-6 flex-1 overflow-y-auto">
+          {progressLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 text-slate-600 dark:text-slate-400 animate-spin" />
+            </div>
+          ) : (
+            <LDAPSyncProgressBar {...progressBarProps} />
+          )}
+        </div>
+        
+        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+          {syncStatus?.is_running && (
+            <button
+              className="btn btn-danger"
+              onClick={handleCancelSync}
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Cancelling...
+                </span>
+              ) : (
+                'Cancel Sync'
+              )}
+            </button>
+          )}
+          {!syncStatus?.is_running && (
+            <button
+              className="btn btn-primary"
+              onClick={handleCloseModal}
+            >
+              Close
+            </button>
+          )}
+        </div>
+      </Modal>
 
       {/* Sync Status */}
       <div className="card mb-6">
@@ -328,14 +463,14 @@ const LDAPSyncTab: React.FC = () => {
           <div className="card border border-slate-200 dark:border-[#3e3e42]">
             <div className="flex justify-between items-center mb-3">
               <h4 className="font-semibold text-slate-900 dark:text-[#ff6b35]">Last Sync</h4>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(syncStatus?.status, syncStatus?.is_running)}`}>
-                {getStatusLabel(syncStatus?.status, syncStatus?.is_running)}
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
+                {statusLabel}
               </span>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-sm text-slate-600 dark:text-[#ff4500]">Last Run:</span>
-                <span className="text-sm text-slate-900 dark:text-slate-300">{formatDate(syncStatus?.last_sync_time)}</span>
+                <span className="text-sm text-slate-900 dark:text-slate-300">{formattedLastSyncTime}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-slate-600 dark:text-[#ff4500]">Duration:</span>
@@ -391,7 +526,7 @@ const LDAPSyncTab: React.FC = () => {
         >
           {loading ? (
             <span className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-slate-600 dark:border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+              <Loader2 className="w-4 h-4 animate-spin" />
               Testing...
             </span>
           ) : (

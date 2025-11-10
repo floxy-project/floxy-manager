@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Loader2, Save, Network } from 'lucide-react';
 import apiClient, { LDAPConfig } from '../../utils/api';
 
 const LDAPConfigTab: React.FC = () => {
@@ -142,7 +143,7 @@ const LDAPConfigTab: React.FC = () => {
   if (configLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+        <Loader2 className="w-8 h-8 text-slate-600 dark:text-slate-400 animate-spin" />
       </div>
     );
   }
@@ -394,11 +395,14 @@ const LDAPConfigTab: React.FC = () => {
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Saving...
                 </span>
               ) : (
-                'Save Configuration'
+                <span className="flex items-center gap-2">
+                  <Save className="w-4 h-4" />
+                  Save Configuration
+                </span>
               )}
             </button>
             <button
@@ -409,11 +413,14 @@ const LDAPConfigTab: React.FC = () => {
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-slate-600 dark:border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   Testing...
                 </span>
               ) : (
-                'Test Connection'
+                <span className="flex items-center gap-2">
+                  <Network className="w-4 h-4" />
+                  Test Connection
+                </span>
               )}
             </button>
           </div>

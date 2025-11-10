@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { X } from 'lucide-react';
 import { WorkflowGraph, type GraphDefinition, type StepDefinition } from './WorkflowGraph';
 
 export interface WorkflowDefinition {
@@ -304,10 +305,11 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
             </div>
           </div>
           <button
-            className="ml-4 w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 hover:text-slate-900 text-xl leading-none"
+            className="ml-4 w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-600 hover:text-slate-900"
             onClick={onClose}
+            aria-label="Close"
           >
-            ×
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -374,15 +376,16 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                   >
                     <span className="text-sm">{stepName}</span>
                     <button
-                      className="text-red-500 hover:text-red-700 text-xs"
+                      className="text-red-500 hover:text-red-700 p-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (confirm(`Delete step "${stepName}"?`)) {
                           handleDeleteStep(stepName);
                         }
                       }}
+                      aria-label={`Delete step ${stepName}`}
                     >
-                      ×
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
@@ -413,10 +416,11 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-slate-900">Edit Step</h4>
                 <button
-                  className="text-slate-500 hover:text-slate-700"
+                  className="text-slate-500 hover:text-slate-700 p-1"
                   onClick={() => setSelectedStep(null)}
+                  aria-label="Close editor"
                 >
-                  ×
+                  <X className="w-4 h-4" />
                 </button>
               </div>
               <StepEditor
@@ -537,13 +541,14 @@ const StepEditor: React.FC<StepEditorProps> = ({ step, allSteps, onUpdate }) => 
                 ))}
               </select>
               <button
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500 hover:text-red-700 p-1"
                 onClick={() => {
                   const newNext = step.next?.filter((_, i) => i !== idx) || [];
                   onUpdate({ next: newNext });
                 }}
+                aria-label="Remove next step"
               >
-                ×
+                <X className="w-4 h-4" />
               </button>
             </div>
           ))}
@@ -624,13 +629,14 @@ const StepEditor: React.FC<StepEditorProps> = ({ step, allSteps, onUpdate }) => 
                     ))}
                   </select>
                   <button
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 p-1"
                     onClick={() => {
                       const newWaitFor = step.wait_for?.filter((_, i) => i !== idx) || [];
                       onUpdate({ wait_for: newWaitFor });
                     }}
+                    aria-label="Remove wait for step"
                   >
-                    ×
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -669,13 +675,14 @@ const StepEditor: React.FC<StepEditorProps> = ({ step, allSteps, onUpdate }) => 
                   ))}
                 </select>
                 <button
-                  className="text-red-500 hover:text-red-700"
+                  className="text-red-500 hover:text-red-700 p-1"
                   onClick={() => {
                     const newParallel = step.parallel?.filter((_, i) => i !== idx) || [];
                     onUpdate({ parallel: newParallel });
                   }}
+                  aria-label="Remove parallel step"
                 >
-                  ×
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
