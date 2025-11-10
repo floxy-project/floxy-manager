@@ -1,5 +1,7 @@
 # Floxy Manager
 
+[![boosty-cozy](https://gideonwhite1029.github.io/badges/cozy-boosty_vector.svg)](https://boosty.to/dev-tools-hacker)
+
 A modern web interface for managing Floxy workflows with Go backend and React frontend.
 
 ## Features
