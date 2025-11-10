@@ -48,12 +48,75 @@ make docker-run
 
 ## Environment Variables
 
-- `PORT` - Server port (default: 3001)
-- `DB_HOST` - Database host (default: localhost)
-- `DB_PORT` - Database port (default: 5435)
-- `DB_NAME` - Database name (default: floxy)
-- `DB_USER` - Database user (default: floxy)
-- `DB_PASSWORD` - Database password (default: password)
+### Required Variables
+
+- `FRONTEND_URL` - Frontend URL (required, e.g., `http://localhost:3001` or `https://floxy.local`)
+- `SECRET_KEY` - Secret key for encryption (required)
+- `JWT_SECRET_KEY` - Secret key for JWT tokens (required)
+- `API_SERVER_ADDR` - API server address (required, e.g., `:443` or `:8080`)
+- `POSTGRES_HOST` - PostgreSQL host (required)
+- `POSTGRES_DATABASE` - PostgreSQL database name (required)
+- `POSTGRES_USER` - PostgreSQL user (required)
+- `POSTGRES_PASSWORD` - PostgreSQL password (required)
+- `MAILER_ADDR` - SMTP server address (required, e.g., `smtp.example.com:465`)
+- `MAILER_USER` - SMTP user (required)
+- `MAILER_PASSWORD` - SMTP password (required)
+- `MAILER_FROM` - Email sender address (required, e.g., `noreply@example.com`)
+
+### Optional Server Configuration
+
+- `TECH_SERVER_ADDR` - Technical server address (default: `:8081`)
+- `API_SERVER_READ_TIMEOUT` - API server read timeout (default: `15s`)
+- `API_SERVER_WRITE_TIMEOUT` - API server write timeout (default: `30s`)
+- `API_SERVER_IDLE_TIMEOUT` - API server idle timeout (default: `60s`)
+- `API_SERVER_USE_TLS` - Enable TLS for API server (default: `false`)
+- `API_SERVER_CERT_FILE` - TLS certificate file path
+- `API_SERVER_KEY_FILE` - TLS private key file path
+- `TECH_SERVER_READ_TIMEOUT` - Technical server read timeout (default: `15s`)
+- `TECH_SERVER_WRITE_TIMEOUT` - Technical server write timeout (default: `30s`)
+- `TECH_SERVER_IDLE_TIMEOUT` - Technical server idle timeout (default: `60s`)
+
+### Database Configuration
+
+- `POSTGRES_PORT` - PostgreSQL port (default: `5432`)
+- `POSTGRES_MAX_CONNS` - Maximum database connections (default: `20`)
+- `POSTGRES_MAX_IDLE_CONN_TIME` - Maximum idle connection time (default: `5m`)
+- `POSTGRES_CONN_MAX_LIFETIME` - Maximum connection lifetime (default: `10m`)
+- `MIGRATIONS_DIR` - Migrations directory path (default: `./migrations`)
+
+### JWT Configuration
+
+- `ACCESS_TOKEN_TTL` - Access token time-to-live (default: `3h`)
+- `REFRESH_TOKEN_TTL` - Refresh token time-to-live (default: `168h`)
+- `RESET_PASSWORD_TTL` - Password reset token time-to-live (default: `8h`)
+
+### Admin User Configuration
+
+- `ADMIN_EMAIL` - Admin user email (optional)
+- `ADMIN_TMP_PASSWORD` - Admin user temporary password (optional)
+
+### Mailer Configuration
+
+- `MAILER_ALLOW_INSECURE` - Allow insecure SMTP connections (default: `false`)
+- `MAILER_USE_TLS` - Use TLS for SMTP (default: `false`)
+- `MAILER_CERT_FILE` - SMTP TLS certificate file path
+- `MAILER_KEY_FILE` - SMTP TLS private key file path
+
+### SAML/SSO Configuration
+
+- `SAML_ENABLED` - Enable SAML authentication (default: `false`)
+- `SAML_CREATE_CERTS` - Create SAML certificates automatically (default: `false`)
+- `SAML_ENTITY_ID` - SAML entity ID
+- `SAML_CERTIFICATE_PATH` - SAML certificate file path
+- `SAML_PRIVATE_KEY_PATH` - SAML private key file path
+- `SAML_IDP_METADATA_URL` - Identity Provider metadata URL
+- `SAML_SSO_URL` - SSO URL (optional, overrides metadata)
+- `SAML_ATTRIBUTE_MAPPING` - Attribute mapping (e.g., `uid:username,mail:email`)
+- `SAML_SKIP_TLS_VERIFY` - Skip TLS verification (default: `false`)
+
+### Logging
+
+- `LOGGER_LEVEL` - Logging level (default: `info`, options: `debug`, `info`, `warn`, `error`)
 
 ## API Endpoints
 
