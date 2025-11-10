@@ -23,9 +23,6 @@ make install
 make dev
 ```
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:3001
-
 ### Production Build
 
 ```bash
