@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authFetch } from '../utils/api';
 import { useAuth } from '../auth/AuthContext';
+import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface UserInfo {
   id: number;
@@ -291,7 +292,7 @@ export const Account: React.FC = () => {
     return (
       <div className="loading">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-5 h-5 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+          <Loader2 className="w-5 h-5 animate-spin" />
           <span>Loading account information...</span>
         </div>
       </div>
@@ -302,9 +303,7 @@ export const Account: React.FC = () => {
     return (
       <div className="error">
         <div className="flex items-center justify-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <AlertCircle className="w-5 h-5" />
           <span>Error: {error}</span>
         </div>
       </div>

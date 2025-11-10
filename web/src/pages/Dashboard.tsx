@@ -4,6 +4,7 @@ import { CleanupModal } from '../components/CleanupModal';
 import { AssignWorkflowsModal } from '../components/AssignWorkflowsModal';
 import { authFetch } from '../utils/api';
 import { useRBAC } from '../auth/permissions';
+import { AlertCircle, Plus, Trash2, Clipboard, Loader2 } from 'lucide-react';
 
 interface SummaryStats {
   total_workflows: number;
@@ -112,7 +113,7 @@ export const Dashboard: React.FC = () => {
     return (
       <div className="loading">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-5 h-5 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+          <Loader2 className="w-5 h-5 animate-spin" />
           <span>Loading dashboard...</span>
         </div>
       </div>
@@ -123,9 +124,7 @@ export const Dashboard: React.FC = () => {
     return (
       <div className="error">
         <div className="flex items-center justify-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <AlertCircle className="w-5 h-5" />
           <span>Error: {error}</span>
         </div>
       </div>
@@ -180,18 +179,14 @@ export const Dashboard: React.FC = () => {
               className="btn btn-primary"
               onClick={() => setShowAssignWorkflowsModal(true)}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-4 h-4" />
               Assign Workflows to Project
             </button>
             <button
               className="btn btn-danger"
               onClick={() => setShowCleanupModal(true)}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <Trash2 className="w-4 h-4" />
               Clean Old Partitions
             </button>
           </div>
@@ -202,9 +197,7 @@ export const Dashboard: React.FC = () => {
         <h2>Active Workflows</h2>
         {!activeWorkflows || activeWorkflows.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-[#ff4500]500">
-            <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+            <Clipboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No active workflows</p>
           </div>
         ) : (

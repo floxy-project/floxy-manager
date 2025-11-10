@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import logoImage from '../assets/floxy_logo.png';
+import { AlertCircle } from 'lucide-react';
 
 const SSOError: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -28,19 +29,7 @@ const SSOError: React.FC = () => {
 
           <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50">
             <div className="flex items-start gap-3">
-              <svg
-                className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">
                   {error}

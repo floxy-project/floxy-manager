@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { authFetch } from '../utils/api';
 import { WorkflowGraph } from '../components/WorkflowGraph';
 import { JsonViewer } from '../components/JsonViewer';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface WorkflowDefinition {
     id: string;
@@ -163,9 +164,7 @@ export const WorkflowDetail: React.FC = () => {
                                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                                     disabled={currentPage === 1}
                                 >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
+                                    <ChevronLeft className="w-4 h-4" />
                                     Previous
                                 </button>
                                 <div className="px-4 py-2 rounded-lg" style={{
@@ -185,9 +184,7 @@ export const WorkflowDetail: React.FC = () => {
                                     disabled={currentPage === totalPages}
                                 >
                                     Next
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                    </svg>
+                                    <ChevronRight className="w-4 h-4" />
                                 </button>
                             </div>
                         )}

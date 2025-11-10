@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useRBAC } from '../auth/permissions';
 import apiClient, { type Membership, type Role, type UserListItem } from '../utils/api';
 import { Navigate } from 'react-router-dom';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 
 export const Memberships: React.FC = () => {
   const { tenantId, projectId } = useParams<{ tenantId: string; projectId: string }>();
@@ -134,9 +135,7 @@ export const Memberships: React.FC = () => {
             className="btn btn-primary"
             disabled={availableUsers.length === 0}
           >
-            <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus className="w-5 h-5 inline mr-2" />
             Add Member
           </button>
         )}
@@ -156,7 +155,7 @@ export const Memberships: React.FC = () => {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+          <Loader2 className="w-8 h-8 animate-spin" />
         </div>
       ) : (
         <div className="card">
@@ -196,11 +195,9 @@ export const Memberships: React.FC = () => {
                           title="Remove member"
                         >
                           {deletingId === membership.id ? (
-                            <div className="w-4 h-4 border-2 border-red-600 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                            <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            <Trash2 className="w-4 h-4" />
                           )}
                         </button>
                       </td>

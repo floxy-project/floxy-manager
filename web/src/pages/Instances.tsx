@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import { AlertCircle, Clipboard, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 interface ActiveWorkflow {
   instance_id: number;
@@ -72,7 +73,7 @@ export const Instances: React.FC = () => {
     return (
       <div className="loading">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-5 h-5 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+          <Loader2 className="w-5 h-5 animate-spin" />
           <span>Loading instances...</span>
         </div>
       </div>
@@ -83,9 +84,7 @@ export const Instances: React.FC = () => {
     return (
       <div className="error">
         <div className="flex items-center justify-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <AlertCircle className="w-5 h-5" />
           <span>Error: {error}</span>
         </div>
       </div>
@@ -99,9 +98,7 @@ export const Instances: React.FC = () => {
       <div className="card">
         {instances.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-[#ff4500]500">
-            <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+            <Clipboard className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No active instances found</p>
           </div>
         ) : (
@@ -187,9 +184,7 @@ export const Instances: React.FC = () => {
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="w-4 h-4" />
               Previous
             </button>
             <div className="px-4 py-2 rounded-lg" style={{
@@ -209,9 +204,7 @@ export const Instances: React.FC = () => {
               disabled={currentPage === totalPages}
             >
               Next
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}

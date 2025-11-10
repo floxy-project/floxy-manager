@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { authFetch } from '../utils/api';
+import { AlertCircle, Inbox, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 interface DeadLetterItem {
   id: number;
@@ -62,7 +63,7 @@ export const DLQ: React.FC = () => {
     return (
       <div className="loading">
         <div className="flex items-center justify-center gap-2">
-          <div className="w-5 h-5 border-2 border-slate-300 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-400 rounded-full animate-spin"></div>
+          <Loader2 className="w-5 h-5 animate-spin" />
           <span>Loading DLQ items...</span>
         </div>
       </div>
@@ -73,9 +74,7 @@ export const DLQ: React.FC = () => {
     return (
       <div className="error">
         <div className="flex items-center justify-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <AlertCircle className="w-5 h-5" />
           <span>Error: {error}</span>
         </div>
       </div>
@@ -102,9 +101,7 @@ export const DLQ: React.FC = () => {
       <div className="card">
         {dlqItems.length === 0 ? (
           <div className="text-center py-8 text-slate-500 dark:text-[#ff4500]500">
-            <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
+            <Inbox className="w-12 h-12 mx-auto mb-3 opacity-50" />
             <p>No items in Dead Letter Queue</p>
           </div>
         ) : (
@@ -183,9 +180,7 @@ export const DLQ: React.FC = () => {
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
+                  <ChevronLeft className="w-4 h-4" />
                   Previous
                 </button>
                 <div className="px-4 py-2 rounded-lg" style={{
@@ -205,9 +200,7 @@ export const DLQ: React.FC = () => {
                   disabled={currentPage === totalPages}
                 >
                   Next
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             )}
