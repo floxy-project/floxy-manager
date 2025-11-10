@@ -9,9 +9,6 @@ dev-down: ## Down the environment in docker compose
 dev-clean: ## Down the environment in docker compose with image cleanup
 	${_COMPOSE_BASE} down --remove-orphans -v --rmi all
 
-dev-build-proxy: ## Building floxym-reverse-proxy
-	${_COMPOSE_BASE} build floxym-reverse-proxy
-
 dev-build-backend: ## Building floxym with SSH key for private repo access
 	@if [ ! -f ${HOME}/.ssh/id_rsa ]; then \
 		echo "Error: SSH key not found at ${HOME}/.ssh/id_rsa"; \

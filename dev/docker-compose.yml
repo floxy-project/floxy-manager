@@ -1,33 +1,6 @@
 version: '3.8'
 
 services:
-#  floxym-reverse-proxy:
-#    build:
-#      context: ../reverse-proxy
-#      dockerfile: Dockerfile
-#    container_name: floxym-reverse-proxy
-#    ports:
-#      - "443:443"
-#    environment:
-#      - DOMAIN=${DOMAIN}
-#      - BACKEND_URL=http://floxym:3000
-#      - FRONTEND_URL=http://floxym:3000
-#      - SSL_CERT=${SSL_CERT}
-#      - SSL_CERT_KEY=${SSL_CERT_KEY}
-#      - SECURE_LINK_MD5=${SECURE_LINK_MD5}
-#    volumes:
-#      - "./nginx/ssl:/etc/nginx/ssl"
-#    depends_on:
-#      floxym:
-#        condition: service_healthy
-#    restart: always
-#    healthcheck:
-#      test: ["CMD", "netstat", "-tln", "|", "grep", "443 && netstat", "-tln", "|", "grep", "8090"]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 3
-#      start_period: 40s
-
   floxyd:
     image: rom8726/floxyd:latest
     container_name: floxyd
