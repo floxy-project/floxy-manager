@@ -12,6 +12,7 @@ type PermissionsService interface {
 	CanManageProject(ctx context.Context, projectID domain.ProjectID) error
 	CanViewAudit(ctx context.Context, projectID domain.ProjectID) error
 	CanManageMembership(ctx context.Context, projectID domain.ProjectID) error
+	CanCreateWorkflow(ctx context.Context, projectID domain.ProjectID) error
 	GetAccessibleProjects(
 		ctx context.Context,
 		projects []domain.Project,

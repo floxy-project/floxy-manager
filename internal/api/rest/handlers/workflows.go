@@ -856,10 +856,10 @@ func (h *WorkflowsHandler) CreateWorkflow(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Check if user has permission to manage this project
-	if err := h.permissionsSrv.CanManageProject(r.Context(), projectID); err != nil {
+	// Check if user has permission to create workflows in this project
+	if err := h.permissionsSrv.CanCreateWorkflow(r.Context(), projectID); err != nil {
 		if errors.Is(err, domain.ErrPermissionDenied) {
-			respondError(w, http.StatusForbidden, "Access denied to manage this project")
+			respondError(w, http.StatusForbidden, "Access denied to create workflows in this project")
 			return
 		}
 		respondError(w, http.StatusInternalServerError, "Failed to verify permissions")

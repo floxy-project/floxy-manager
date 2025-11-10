@@ -7,6 +7,9 @@ export const PERMISSIONS = {
         view: 'project.view',
         manage: 'project.manage',
     },
+    workflow: {
+        create: 'workflow.create',
+    },
     audit: {
         view: 'audit.view',
     },
@@ -18,6 +21,7 @@ export const PERMISSIONS = {
 export type PermissionKey =
     | typeof PERMISSIONS.project.view
     | typeof PERMISSIONS.project.manage
+    | typeof PERMISSIONS.workflow.create
     | typeof PERMISSIONS.audit.view
     | typeof PERMISSIONS.membership.manage
 
@@ -93,6 +97,7 @@ export function useRBAC(projectId?: string | number) {
             has: check,
             canViewProject: () => check(PERMISSIONS.project.view),
             canManageProject,
+            canCreateWorkflow: () => check(PERMISSIONS.workflow.create),
             canViewAudit: () => check(PERMISSIONS.audit.view),
             canManageMembership: () => check(PERMISSIONS.membership.manage),
             canCreateProject,

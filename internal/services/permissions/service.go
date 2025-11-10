@@ -176,6 +176,20 @@ func (s *Service) CanManageMembership(ctx context.Context, projectID domain.Proj
 	return nil
 }
 
+// CanCreateWorkflow checks if a user can create workflows in a project.
+func (s *Service) CanCreateWorkflow(ctx context.Context, projectID domain.ProjectID) error {
+	ok, err := s.HasProjectPermission(ctx, projectID, domain.PermWorkflowCreate)
+	if err != nil {
+		return err
+	}
+
+	if !ok {
+		return domain.ErrPermissionDenied
+	}
+
+	return nil
+}
+
 // GetAccessibleProjects returns all projects that a user can access.
 func (s *Service) GetAccessibleProjects(
 	ctx context.Context,
@@ -222,6 +236,7 @@ func (s *Service) GetMyProjectPermissions(
 		domain.PermProjectView,
 		domain.PermProjectManage,
 		domain.PermProjectCreate,
+		domain.PermWorkflowCreate,
 		domain.PermAuditView,
 		domain.PermMembershipManage,
 	}

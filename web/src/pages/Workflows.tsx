@@ -34,6 +34,15 @@ export const Workflows: React.FC = () => {
   const [showAssignWorkflowsModal, setShowAssignWorkflowsModal] = useState(false);
   const [showWorkflowBuilder, setShowWorkflowBuilder] = useState(false);
 
+  // Debug: log permissions for troubleshooting
+  React.useEffect(() => {
+    if (projectId) {
+      console.log('Workflows page - projectId:', projectId);
+      console.log('Workflows page - canCreateWorkflow:', rbac.canCreateWorkflow());
+      console.log('Workflows page - canManageProject:', rbac.canManageProject());
+    }
+  }, [projectId, rbac]);
+
   useEffect(() => {
     if (tenantId && projectId) {
       fetchWorkflows();
@@ -103,8 +112,8 @@ export const Workflows: React.FC = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1>Workflow Definitions</h1>
-        {rbac.canManageProject() && (
-          <div className="flex gap-3">
+        <div className="flex gap-3">
+          {rbac.canCreateWorkflow() && (
             <button
               className="btn btn-primary"
               onClick={() => setShowWorkflowBuilder(true)}
@@ -112,6 +121,8 @@ export const Workflows: React.FC = () => {
               <Edit className="w-4 h-4" />
               Create Workflow
             </button>
+          )}
+          {rbac.canManageProject() && (
             <button
               className="btn btn-outline"
               onClick={() => setShowAssignWorkflowsModal(true)}
@@ -119,8 +130,8 @@ export const Workflows: React.FC = () => {
               <Plus className="w-4 h-4" />
               Assign Workflows
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
       
       <div className="card">

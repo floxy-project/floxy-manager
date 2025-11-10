@@ -9,6 +9,9 @@ const (
 	PermProjectManage PermKey = "project.manage"
 	PermProjectCreate PermKey = "project.create"
 
+	// Workflow-level.
+	PermWorkflowCreate PermKey = "workflow.create"
+
 	// Audit & Membership.
 	PermAuditView        PermKey = "audit.view"
 	PermMembershipManage PermKey = "membership.manage"

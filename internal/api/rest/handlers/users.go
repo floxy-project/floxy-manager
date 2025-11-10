@@ -113,6 +113,7 @@ func (h *UsersHandler) GetMyProjects(w http.ResponseWriter, r *http.Request) {
 			domain.PermProjectView,
 			domain.PermProjectManage,
 			domain.PermProjectCreate,
+			domain.PermWorkflowCreate,
 			domain.PermAuditView,
 			domain.PermMembershipManage,
 		}
