@@ -95,6 +95,24 @@ For more installation options, see the [Quick Start](#quick-start) section below
 - **Database Migrations**: Automatic database migrations
 - **Hot Reload**: Hot reload in development mode
 
+## Screenshots
+
+LogIn page:
+
+<img src="docs/login.png" alt="LogIn page" width="600">
+
+Dashboard:
+
+<img src="docs/dashboard.png" alt="Dashboard" width="600">
+
+Workflow Builder:
+
+<img src="docs/workflow_builder.png" alt="Workflow Builder" width="600">
+
+Membership:
+
+<img src="docs/membership.png" alt="Membership" width="600">
+
 ## Quick Start
 
 ### Development Mode
