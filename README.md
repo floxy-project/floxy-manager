@@ -2,14 +2,96 @@
 
 A modern web interface for managing Floxy workflows with Go backend and React frontend.
 
+## Installation
+
+Floxy Manager can be installed using Docker. The Docker image is available in GitHub Container Registry:
+
+```bash
+docker pull rom8726/floxy-manager:latest
+```
+
+For more installation options, see the [Quick Start](#quick-start) section below.
+
 ## Features
 
-- **Go Backend**: High-performance backend using the Floxy library
+### Authentication & Security
+
+- **SSO/SAML Authentication**: Single Sign-On via SAML provider with Active Directory support. Configurable attribute mapping, automatic certificate generation, Identity Provider metadata support
+- **LDAP Integration**: Full integration with LDAP/Active Directory for authentication and user synchronization. TLS/StartTLS support, connection pooling, user attribute synchronization, sync logging
+- **Two-Factor Authentication (2FA)**: Two-factor authentication based on TOTP (Time-based One-Time Password). QR code generation, brute-force protection via rate limiting, email code support for 2FA disable
+- **JWT Authentication**: Secure authentication based on JWT tokens with access and refresh token support, configurable token lifetime
+
+### Access Control (RBAC)
+
+- **Role-Based Access Control**: Flexible role-based access control system
+  - Predefined roles: Project Owner, Project Manager, Project Developer, Project Viewer
+  - Granular permissions at project level
+  - Project membership management
+  - Permission checks at API and UI level
+- **Multi-Tenancy**: Multi-tenancy support with data isolation between tenants
+- **Superuser Support**: Superuser support with full access to all features
+
+### Workflow Management
+
+- **GUI Workflow Builder**: Visual workflow editor with interactive graph
+  - Drag-and-drop interface for workflow creation
+  - Support for various step types: Task, Condition, Fork, Join, Parallel, Human Decision, Save Point
+  - Step parameter configuration: handlers, conditions, retry policies, timeouts
+  - Visualization of connections between steps
+  - Export workflows to JSON format
+- **Workflow Visualization**: Interactive graphs for workflow structure visualization
+- **Workflow Instances**: Workflow instance management with detailed step and event viewing
+- **Dead Letter Queue (DLQ)**: Queue for processing failed workflow steps with requeue capability
+- **Workflow Statistics**: Real-time workflow execution statistics
+
+### Project Management
+
+- **Project Management**: Complete project management
+  - Create, edit, and delete projects
+  - Project descriptions and metadata
+  - Hierarchy: Tenants → Projects → Workflows
+- **Project Memberships**: Project member management with role assignment
+- **Project Permissions**: Granular permissions at project level
+
+### Audit & Monitoring
+
+- **Audit Log**: Complete audit log of all user actions
+  - Logging of create, update, delete operations
+  - Project-based filtering
+  - Pagination and search
+- **LDAP Sync Logs**: Detailed LDAP synchronization logs with statistics
+- **Metrics & Health Checks**: Prometheus metrics and health check endpoints
+- **Technical Server**: Separate technical server for monitoring and debugging (pprof)
+
+### User Management
+
+- **User Management**: Complete user management
+  - User creation and editing
+  - Password management and reset
+  - External user support (LDAP, SSO)
+- **Email Notifications**: Email notification sending
+  - Password reset
+  - 2FA codes
+  - Other system notifications
+- **Password Management**: Secure password storage with hashing
+
+### Additional Features
+
+- **Settings Management**: System settings management with encryption of sensitive data
+- **Dashboard**: Information dashboard with project overview and statistics
+- **RESTful API**: Full REST API for all system features
+- **CORS Support**: Cross-Origin Resource Sharing support
+- **Transaction Management**: Database transaction management
+- **Dependency Injection**: Dependency injection for component management
+
+### Technical Features
+
+- **Go Backend**: High-performance Go backend
 - **React Frontend**: Modern TypeScript/React interface
-- **Single Container**: Both backend and frontend in one Docker image
-- **Real-time Monitoring**: Live workflow statistics and monitoring
-- **Workflow Visualization**: Interactive workflow graphs
-- **Instance Management**: View and manage workflow instances
+- **Single Container**: Backend and frontend in one Docker image
+- **PostgreSQL**: PostgreSQL as primary database
+- **Database Migrations**: Automatic database migrations
+- **Hot Reload**: Hot reload in development mode
 
 ## Quick Start
 
@@ -157,4 +239,4 @@ floxy-manager/
 
 ## License
 
-Apache 2.0
+See LICENSE file.
