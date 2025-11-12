@@ -4,6 +4,8 @@
 
 A modern web interface for managing Floxy workflows with Go backend and React frontend.
 
+> Disclaimer: This app has not been tested in production yet. By using it, you are acting at your own risk.
+
 ## Installation
 
 Floxy Manager can be installed using Docker. The Docker image is available in GitHub Container Registry:
