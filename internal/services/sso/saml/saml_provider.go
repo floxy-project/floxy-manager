@@ -423,9 +423,26 @@ func (p *SAMLProvider) findOrCreateUser(ctx context.Context, username, email str
 		if err != nil {
 			return nil, fmt.Errorf("failed to create user: %w", err)
 		}
+	} else {
+		needsUpdate := false
+
+		if user.Email != email && email != "" {
+			user.Email = email
+			needsUpdate = true
+		}
+
+		if !user.IsExternal {
+			user.IsExternal = true
+			needsUpdate = true
+		}
+
+		if needsUpdate {
+			if err := p.usersRepo.Update(ctx, &user); err != nil {
+				return nil, fmt.Errorf("failed to update user: %w", err)
+			}
+		}
 	}
 
-	// Check if the user is active
 	if !user.IsActive {
 		return nil, domain.ErrInactiveUser
 	}
